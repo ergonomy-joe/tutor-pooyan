@@ -1,0 +1,3775 @@
+;----------------------------------------
+;HACKED	EQU 0
+;----------------------------------------
+;RT is "B	*R11"
+;----------------------------------------
+;DEFINE REGISTERS
+;----------------------------------------
+R0	EQU	0
+R1	EQU	1
+R2	EQU	2
+R3	EQU	3
+R4	EQU	4
+R5	EQU	5
+R6	EQU	6
+R7	EQU	7
+R8	EQU	8
+R9	EQU	9
+R10	EQU	10
+R11	EQU	11
+R12	EQU	12
+R13	EQU	13
+R14	EQU	14
+R15	EQU	15
+;----------------------------------------
+;BIOS
+;----------------------------------------
+C_0028	EQU 0028h	;[bios]VDP:vram clean all?
+
+C_0064	EQU 0064h	;[bios]reset sound chip?
+C_0068	EQU 0068h	;[bios]start sound channel 0(R9:addr_data)?
+
+C_0070	EQU 0070h	;[bios]start sound channel 2(R9:addr_data)?
+
+C_007C	EQU 007Ch	;[bios]VDP:make vram address(R9:value)->R9?
+C_0080	EQU 0080h	;[bios]vram to cpu memcpy(R9:value_src,R10:size,R8:dst)?
+
+C_00A0	EQU 00A0h	;[bios]cpu to vram memcpy(R9:value_dst,R10:size,R8:src)?
+C_00A4	EQU 00A4h	;[bios]putchar(R8:char,R9:pos)?
+
+C_00D8	EQU 00D8h	;[bios]random->$F06A?
+C_00DC	EQU 00DCh	;[bios]update score(R9:mask,R10:val)
+
+C_00E4	EQU 00E4h	;[bios]define sprite[xmirror](R8:src_adr,R9:vaddr,R7:some_mask)?
+
+C_00F0	EQU 00F0h	;[bios]something with joypads[bis](R7:index)?
+
+C_00F8	EQU 00F8h	;[bios]convert to decimal(R8:val)->@R9?
+
+C_0130	EQU 0130h	;[bios]sound_0?
+C_0134	EQU 0134h	;[bios]sound_1?
+C_0138	EQU 0138h	;[bios]sound_2?
+C_013C	EQU 013Ch	;[bios]sound_3?
+
+C_0178	EQU 0178h	;[bios]VDP:write one word(R9:vaddr,R8:val)?
+C_017C	EQU 017Ch	;[bios]VDP:read one word(R9:vaddr)->R8(R7+=2)?
+
+C_0188	EQU 0188h	;[bios]active wait(R13:delay)?
+
+C_0198	EQU 0198h	;[bios]VDP:set registers default values?
+
+C_01B0	EQU 01B0h	;[bios]set {system colors|hiscore position}(R12:val)?
+C_01B4	EQU 01B4h	;[bios]get player count->R12?
+C_01B8	EQU 01B8h	;[bios]set player count(R12:#)?
+C_01BC	EQU 01BCh	;[bios]VDP:set graphic mode(16x16sprite)(R12:on/off)?
+C_01C0	EQU 01C0h	;[bios]VDP:set graphic mode(magsprite)(R12:on/off)?
+C_01C4	EQU 01C4h	;[bios]VDP:set graphic mode(enabledisplay)(R12:on/off)?
+
+C_01D4	EQU 01D4h	;[bios]make some VDP address(R9)->R9?
+
+C_01DC	EQU 01DCh	;[bios](R9)->R9?
+
+C_01F4	EQU 01F4h	;[bios]get score(R10)->R12/R13?
+C_01F8	EQU 01F8h	;[bios]clear decimal workspace(R12)?
+C_01FC	EQU 01FCh	;[bios]VDP:reg[7] = R9?
+
+C_0220	EQU 0220h	;[bios]is keypressed('ENTER')?
+
+C_0228	EQU 0228h	;[bios]VDP:reset VRAM(R1:vaddr_base,R8:fill_value)?
+C_022C	EQU 022Ch	;[bios]"ask players count"(R9:vram offset,R10:src offset)
+;----------------------------------------
+;VARIABLES
+;----------------------------------------
+C_F000	EQU 0F000h	;player vertical position?
+C_F002	EQU 0F002h	;ham state?
+;-- (sent as is to the vdp sprite table) --
+C_F004	EQU 0F004h	;enemy 1
+;0F004h,0F006h
+C_F008	EQU 0F008h	;enemy 2
+;0F008h,0F00Ah
+C_F00C	EQU 0F00Ch	;enemy 3
+;0F00Ch,0F00Eh
+C_F010	EQU 0F010h	;enemy 4
+;0F010h,0F012h
+X_F014	EQU 0F014h
+;-- (sent as is to the vdp sprite table) --
+C_F014	EQU 0F014h
+;0F016h
+;0F018h
+;0F01Ah
+X_F01C	EQU 0F01Ch
+;-- --
+C_F01C	EQU 0F01Ch	;ham
+;0F01Ch,0F01Eh
+X_F020	EQU 0F020h
+;-- --
+C_F020	EQU 0F020h
+;0F022h
+;-- arrow infos(sent as is to the vdp sprite table) --
+C_F024	EQU 0F024h
+;0F024h/0F026h	;arrow 1
+;0F028h/0F02Ah	;arrow 2
+X_F02C	EQU 0F02Ch
+;-- --
+C_F02C	EQU 0F02Ch
+;0F02Eh
+;-- (sent as is to the vdp sprite table) --
+C_F030	EQU 0F030h
+;0F032h
+X_F034	EQU 0F034h
+;0F034h
+;-- --
+C_F036	EQU 0F036h	;frame counter?
+;0F038h
+C_F03A	EQU 0F03Ah	;pointer to table C_9E36
+C_F03C	EQU 0F03Ch
+C_F03E	EQU 0F03Eh
+X_F040	EQU 0F040h
+;-- --
+C_F040	EQU 0F040h	;extra life index?
+C_F042	EQU 0F042h	;lives count?
+C_F044	EQU 0F044h	;enemy count?
+C_F046	EQU 0F046h	;current level?
+X_F048	EQU 0F048h
+;-- --
+C_F048	EQU 0F048h	;difficulty flag
+C_F04A	EQU 0F04Ah	;return @
+C_F04C	EQU 0F04Ch	;return @
+C_F04E	EQU 0F04Eh	;return @
+;-- --
+X_F050	EQU 0F050h	;end of used RAM?
+;----------------------------------------
+	AORG	08000H
+;----------------------------------------$8000
+	WORD	5555H	;header
+;CARTRIDGES starting with $33 or $66
+;can be executed from the GRAPHIC MONITOR
+;with keyword "CART"
+;----------------------------------------$8002
+;entry point
+C_8002
+	BL	@C_0198	;[bios]VDP:set registers default values?
+
+	LI	R9,0400h
+	BL	@C_01FC	;[bios]VDP:reg[7] = R9?
+
+	CLR	R12
+	BL	@C_01C0	;[bios]VDP:set graphic mode(magsprite)(R12:on/off)?
+
+	BL	@C_0064	;[bios]reset sound chip?
+
+	BL	@C_0028	;[bios]VDP:vram clean all?
+
+	LI	R12,1
+	BL	@C_01BC	;[bios]VDP:set graphic mode(16x16sprite)(R12:on/off)?
+
+	CLR	R1
+	LI	R8,0F000h
+	BL	@C_0228	;[bios]VDP:reset VRAM(R1:vaddr_base,R8:fill_value)?
+	;======================
+	;=== DIGIT PATTERNS ===
+	;======================
+	;-- move patterns '0'~'9' from VRAM:1080h to VRAM:1780h --
+	;(i.e, $f0~$f9 will be used as digit patterns for
+	;  remaning wolves and level counters)
+	LI	R8,C_F000
+	LI	R9,1080h
+	LI	R10,50h
+	BL	@C_0080	;[bios]vram to cpu memcpy(R9:value_src,R10:size,R8:dst)?
+	LI	R9,1780h
+	BL	@C_00A0	;[bios]cpu to vram memcpy(R9:value_dst,R10:size,R8:src)?
+	;-- color table($f0~$f9) to VRAM:2780 --
+	LI	R8,C_9AC2	;OFFSET C_9AC2
+	LI	R9,4780h
+	LI	R10,8
+	LI	R4,0Ah
+C_8056
+	BL	@C_00A0	;[bios]cpu to vram memcpy(R9:value_dst,R10:size,R8:src)?
+	AI	R9,8
+	DEC	R4
+	JNE	C_8056
+	;====================
+	;=== BG PATTERNS  ===
+	;====================
+	;-- patterns($70~$ab) to VRAM:0380/0b80/1380 --
+	LI	R8,C_96FA	;OFFSET C_96FA
+	LI	R9,1380h
+	LI	R10,1E0h
+	LI	R4,3
+C_8072
+	BL	@C_00A0	;[bios]cpu to vram memcpy(R9:value_dst,R10:size,R8:src)?
+	AI	R9,1000h
+	DEC	R4
+	JNE	C_8072
+	;-- color table($70~$ab) to VRAM:2380 --
+	LI	R1,C_9DB6	;OFFSET C_9DB6	;color table
+	LI	R9,0380h
+C_8086
+	MOVB	*R1+,R10	;size
+	SRL	R10,8
+	MOVB	*R1+,R2	;loop count
+	SRL	R2,8
+	MOV	*R1+,R8	;src
+C_8090
+	BL	@C_889C	;calls 3x "cpu to VRAM memcpy(R9:value_dst,R10:size,R8:src)"?
+	A	R10,R9
+	DEC	R2
+	JNE	C_8090
+	CI	R1,C_9DD4	;OFFSET C_9DD4
+	JL	C_8086
+	;=========================
+	;=== MAMA-PIG PATTERNS ===
+	;=========================
+	;-- patterns($b0~$e1) to VRAM:0580/0D80/1580? --
+	LI	R2,C_9A62	;OFFSET C_9A62
+	LI	R3,C_9A92	;OFFSET C_9A92
+	LI	R4,5
+	LI	R9,0580h
+	LI	R10,28h
+C_80B4
+
+	LI	R5,3
+	ANDI	R9,0FFFh
+	;
+C_80BC
+	AI	R9,1000h
+	MOV	R2,R8
+	BL	@C_00A0	;[bios]cpu to vram memcpy(R9:value_dst,R10:size,R8:src)?
+	DEC	R5
+	JNE	C_80BC
+
+	LI	R5,3
+	ANDI	R9,0FFFh
+	AI	R9,28h
+	MOV	R3,R8
+C_80D8
+	AI	R9,1000h
+	BL	@C_00A0	;[bios]cpu to vram memcpy(R9:value_dst,R10:size,R8:src)?
+	DEC	R5
+	JNE	C_80D8
+
+	INCT	R2
+	INCT	R3
+	AI	R9,28h
+	DEC	R4
+	JNE	C_80B4
+	;-- color table($b0~$e1) to VRAM:2580/2D80/3580? --
+	LI	R2,C_9AF2	;OFFSET C_9AF2
+	LI	R3,C_9B22	;OFFSET C_9B22
+	LI	R4,5
+	LI	R9,0580h
+	LI	R10,28h
+C_8104
+
+	LI	R5,3
+	ANDI	R9,0FFFh
+	AI	R9,3000h
+C_8110
+	AI	R9,1000h
+	MOV	R2,R8
+	BL	@C_00A0	;[bios]cpu to vram memcpy(R9:value_dst,R10:size,R8:src)?
+	DEC	R5
+	JNE	C_8110
+
+	LI	R5,3
+	ANDI	R9,0FFFh
+	AI	R9,3028h
+	MOV	R3,R8
+C_812C
+	AI	R9,1000h
+	BL	@C_00A0	;[bios]cpu to vram memcpy(R9:value_dst,R10:size,R8:src)?
+	DEC	R5
+	JNE	C_812C
+
+	INCT	R2
+	INCT	R3
+	AI	R9,28h
+	DEC	R4
+	JNE	C_8104
+	;========================
+	;=== SPRITE PATTERNS ====
+	;========================
+	;-- to VRAM:1800? --
+	LI	R8,C_989A	;OFFSET C_989A
+	LI	R9,8000h
+	LI	R10,01C8h
+	BL	@C_00A0	;[bios]cpu to vram memcpy(R9:value_dst,R10:size,R8:src)?
+	;-- to VRAM:19E0? --
+	LI	R8,C_99DA	;OFFSET C_99DA
+	LI	R9,81E0h
+	LI	R7,8002h
+	BL	@C_00E4	;[bios]define sprite[xmirror](R8:src_adr,R9:vaddr,R7:some_mask)?
+	;==================
+	;=== BG TILEMAP ===
+	;==================
+	LI	R4,C_9CC2	;OFFSET C_9CC2
+	CLR	R5
+C_816A
+	MOVB	*R4+,R1
+	SRL	R1,8
+	MOVB	*R4+,R2
+	SRL	R2,8
+	MOVB	*R4+,R3
+	SRL	R3,8
+	MOV	R4,R8
+	INC	R4
+	A	R3,R5
+	MOV	R5,R9
+C_817E
+	BL	@C_00A4	;[bios]putchar(R8:char,R9:pos)?
+	A	R2,R9
+	DEC	R1
+	JNE	C_817E
+	CI	R4,C_9DB2	;OFFSET C_9DB2
+	JLE	C_816A
+	;===========
+	;===     ===
+	;===========
+	;-- clear ram $f020~$f04f --
+	LI	R1,C_F020
+C_8192
+	CLR	*R1+
+	CI	R1,X_F050
+	JNE	C_8192
+	;-- color table($10~$30) to VRAM:3080? --
+	LI	R8,C_9ACA	;OFFSET C_9ACA
+	LI	R9,6080h
+	LI	R1,21h
+	LI	R10,8
+C_81AA
+	BL	@C_00A0	;[bios]cpu to vram memcpy(R9:value_dst,R10:size,R8:src)?
+	A	R10,R9
+	DEC	R1
+	JNE	C_81AA
+	;-- --
+	LI	R12,1
+	BL	@C_01C4	;[bios]VDP:set graphic mode(enabledisplay)(R12:on/off)?
+	;-- --
+	LI	R7,30	;enemy count = 30
+	MOV	R7,@C_F044
+
+	;current level = 0
+	CLR	@C_F046
+
+	BL	@C_90BA	;init level?
+	;-- --
+	LI	R12,2Bh
+	BL	@C_01B0	;[bios]set {system colors|hiscore position}(R12:val)?
+	;-- "SCORE2" --
+	LI	R9,13h
+	LI	R8,C_9BF4	;'SCORE2'	;OFFSET C_9BF4
+	LI	R1,6
+C_81E0
+	BL	@C_00A4	;[bios]putchar(R8:char,R9:pos)?
+	INC	R9
+	INC	R8
+	DEC	R1
+	JNE	C_81E0
+	;-- put score 2 --
+	LI	R9,2033h
+	BL	@C_00DC	;[bios]update score(R9:mask,R10:val)
+	;-- "SCORE1" --
+	LI	R9,3
+	LI	R8,C_9BEE	;'SCORE1'	;OFFSET C_9BEE
+	LI	R1,6
+C_8200
+	BL	@C_00A4	;[bios]putchar(R8:char,R9:pos)?
+	INC	R9
+	INC	R8
+	DEC	R1
+	JNE	C_8200
+	;-- put score 1 --
+	LI	R9,1023h
+	BL	@C_00DC	;[bios]update score(R9:mask,R10:val)
+	;-- "HI-SCORE" --
+	LI	R9,0Ah
+	LI	R8,C_9BFA	;'HI-SCORE'	;OFFSET C_9BFA
+	LI	R1,8
+C_8220
+	BL	@C_00A4	;[bios]putchar(R8:char,R9:pos)?
+	INC	R9
+	INC	R8
+	DEC	R1
+	JNE	C_8220
+	;-- [intro] --
+	LI	R9,C_9E61	;OFFSET C_9E61
+	BL	@C_0068	;[bios]start sound channel 0(R9:addr_data)?
+	;-- wait '1' or '2' key? --
+C_8234
+	LI	R9,0168h
+	CLR	R10
+	BL	@C_022C	;[bios]"ask players count"(R9:vram offset,R10:src offset)
+	JMP	C_8242	;pressed
+	JMP	C_8234	;not pressed
+C_8242	;pressed
+	BL	@C_013C	;[bios]sound_3?
+	;-- put "SL-AMA SR-PRO " string --
+	LI	R8,C_9CB4	;'SL-AMA SR-PRO '	;OFFSET C_9CB4
+	LI	R9,188h
+	LI	R3,0Eh
+C_8252
+	BL	@C_00A4	;[bios]putchar(R8:char,R9:pos)?
+	INC	R8
+	INC	R9
+	DEC	R3
+	JNE	C_8252
+	;-- wait joypad button --
+	LI	R4,25000	;count to reset[61A8h]
+C_8262
+	CLR	R7
+	BL	@C_00F0	;[bios]something with joypads[bis](R7:index)?
+	B	@C_8274	;pressed
+	;not pressed
+	DEC	R4
+	JNE	C_8262
+	B	@C_8002	;reset
+C_8274
+	;-- --
+	SLA	R8,7
+	SRL	R8,15
+	MOV	R8,@C_F048
+	JEQ	C_828A
+
+	LI	R8,C_9C02	;'P'	;OFFSET C_9C02
+	LI	R9,1Ah
+	BL	@C_00A4	;[bios]putchar(R8:char,R9:pos)?
+C_828A
+	;-- --
+	BL	@C_013C	;[bios]sound_3?
+	;-- [get_ready] --
+	LI	R9,C_9F69	;OFFSET C_9F69
+	BL	@C_0068	;[bios]start sound channel 0(R9:addr_data)?
+
+	BL	@C_95A8	;delay+erase status text?
+	;-- --
+	LI	R8,3	;starts with 3 life
+	MOV	R8,@C_F042
+
+	LI	R12,2
+	BL	@C_01F8	;[bios]clear decimal workspace(R12)?
+
+	BL	@C_01B4	;[bios]get player count->R12?
+	SLA	R12,1
+	SRL	R12,9
+	JNE	C_82DE
+	;-- 1P only --
+	LI	R8,C_9B9A	;OFFSET C_9B9A
+
+	LI	R9,13h
+	LI	R4,6
+C_82C0
+	BL	@C_00A4	;[bios]putchar(R8:char,R9:pos)?
+	INC	R9
+	DEC	R4
+	JNE	C_82C0
+
+	LI	R9,33h
+	LI	R4,6
+C_82D2
+	BL	@C_00A4	;[bios]putchar(R8:char,R9:pos)?
+	INC	R9
+	DEC	R4
+	JNE	C_82D2
+	;-- --
+	JMP	C_8300
+C_82DE
+	;-- save 1P context? --
+	;($f02c~$f047 to VRAM:3D00)
+	LI	R9,9500h
+	BL	@C_007C	;[bios]VDP:make vram address(R9:value)->R9?
+	LI	R1,C_F02C
+C_82EA
+	MOV	*R1+,R8
+	BL	@C_0178	;[bios]VDP:write one word(R9:vaddr,R8:val)?
+	CI	R1,X_F048
+	JNE	C_82EA
+	;-- put score 2 --
+	LI	R9,2033h
+	CLR	R10
+	BL	@C_00DC	;[bios]update score(R9:mask,R10:val)
+	;-- --
+C_8300
+	;-- put score 1 --
+	LI	R9,1023h
+	CLR	R10
+	BL	@C_00DC	;[bios]update score(R9:mask,R10:val)
+	;-- --
+	LI	R8,C_9C04	;'1'	;OFFSET C_9C04
+	BL	@C_955E	;put text "PLAYER-"(R8:char)?
+
+	BL	@C_95A8	;delay+erase status text?
+	;-- [intro] --
+	LI	R9,C_9E61	;OFFSET C_9E61
+	BL	@C_0068	;[bios]start sound channel 0(R9:addr_data)?
+	;----------------
+	;-- main loop? --
+C_831E
+	BL	@C_01B4	;[bios]get player count->R12?
+	SRL	R12,15
+	MOV	R12,R7
+	LI	R5,00D0h
+	BL	@C_00F0	;[bios]something with joypads[bis](R7:index)?
+	B	@C_8334	;pressed
+	JMP	C_83C8	;not pressed
+	;-- pressed --
+C_8334
+	CI	R9,0
+	JEQ	C_83C8
+
+	CI	R10,1
+	JLE	C_8346
+	CI	R10,7
+	JNE	C_835E
+C_8346	;-- up up/left up/right
+	MOV	@C_F000,R9
+	DECT	R9
+	CI	R9,20h
+	JL	C_83C8
+
+	MOV	R9,@C_F000
+	SLA	R9,8
+	A	R5,R9
+
+	B	@C_838C
+C_835E
+	CI	R10,3
+	JL	C_83C8
+	CI	R10,5
+	JH	C_83C8
+	;-- down down/left down/right --
+	MOV	@C_F000,R9
+	INCT	R9
+	CI	R9,88h
+	JH	C_83C8
+
+	MOV	R9,@C_F000
+	SLA	R9,8
+	A	R5,R9
+
+	MOV	@C_F000,R1
+	SLA	R1,13
+	JNE	C_8394
+
+	AI	R9,0FD00h
+
+	JMP	C_83A4
+	;-- --
+C_838C
+	MOV	@C_F000,R1
+	SLA	R1,13
+	JEQ	C_83BC
+	;-- --
+C_8394
+	SRL	R1,13
+	DECT	R1
+	JEQ	C_83B6
+	DECT	R1
+	JEQ	C_83B0
+	DECT	R1
+	JEQ	C_83AA_j
+	JMP	C_83C4
+C_83A4	;-- --
+	LI	R8,C_9BA2	;OFFSET C_9BA2	;mama-pig patterns #1
+	JMP	C_83C0
+C_83AA_j	;-- --
+	LI	R8,C_9BAC	;OFFSET C_9BAC	;mama-pig patterns #2
+	JMP	C_83C0
+C_83B0	;-- --
+	LI	R8,C_9BB6	;OFFSET C_9BB6	;mama-pig patterns #3
+	JMP	C_83C0
+C_83B6	;-- --
+	LI	R8,C_9BC0	;OFFSET C_9BC0	;mama-pig patterns #4
+	JMP	C_83C0
+C_83BC	;-- --
+	LI	R8,C_9BCA	;OFFSET C_9BCA	;mama-pig patterns #5
+	;-- --
+C_83C0
+	BL	@C_83D2	;set mama-pig patterns(R8,R9)?
+	;-- --
+C_83C4
+	B	@C_8400
+	;-- --
+C_83C8
+	MOV	@C_F000,R9
+	SLA	R9,8
+	A	R5,R9
+
+	JMP	C_838C
+;----------------------------------------
+;set mama-pig patterns(R8,R9)?
+C_83D2
+	MOV	R11,@C_F04C
+	;-- --
+	BL	@C_01DC	;[bios](R9)->R9?
+	MOV	R9,R2
+	LI	R3,2
+C_83E0
+	LI	R1,5
+C_83E4
+	BL	@C_00A4	;[bios]putchar(R8:char,R9:pos)?
+	INC	R8
+	AI	R9,20h
+	DEC	R1
+	JNE	C_83E4
+	INC	R2
+	MOV	R2,R9
+	DEC	R3
+	JNE	C_83E0
+	;-- --
+	MOV	@C_F04C,R11
+	RT
+;----------------------------------------
+C_8400
+	BL	@C_8E1A	;refresh shoot
+	;-----------------
+	;-- ham related --
+	LI	R7,0100h
+	LI	R1,C_F01C
+	MOV	*R1,R2
+	INC	R2
+	JNE	C_8416
+	B	@C_8502
+C_8416
+	DEC	R2
+	INCT	R1
+	MOV	*R1,R3
+	SRL	R3,8
+	AI	R3,0FFF7h
+	JEQ	C_8470
+	DEC	R3
+	JEQ	C_8484
+	LI	R3,08h
+	MOV	@C_F000,R5
+	LI	R2,28E0h
+	CI	R5,21h
+	JLE	C_8456
+
+	MOV	@C_F036,R4	;frame counter?
+	MOV	R4,R5
+	SLA	R4,15
+	JNE	C_84F6
+	SLA	R5,14
+	JEQ	C_844E
+	LI	R4,06h
+	JMP	C_8452
+C_844E
+	LI	R4,0Fh
+C_8452
+	MOV	R4,*R1
+	JMP	C_84F6
+C_8456
+	BL	@C_013C	;[bios]sound_3?
+
+	LI	R10,0202h	;200 pts
+	BL	@C_96C0	;score update + check extra life(R10)?
+
+	LI	R6,1	;got ham
+	MOV	R6,@C_F002
+
+	LI	R4,06h
+	MOV	R4,*R1
+C_8470
+	MOV	@C_F000,R2
+	AI	R2,10h
+	SLA	R2,8
+	AI	R2,0D0h
+	LI	R3,09h
+	JMP	C_84F6
+C_8484
+	DECT	R2
+	DEC	R2
+	MOV	R2,R4
+	ANDI	R4,0FFh
+	LI	R3,0Ah
+	CI	R4,80h
+	JH	C_84B6
+	CI	R4,60h
+	JH	C_84BC
+	CI	R4,50h
+	JH	C_84E2
+	CI	R4,30h
+	JH	C_84C2
+	CI	R4,20h
+	JH	C_84D2
+	INCT	R2
+	A	R7,R2
+	JMP	C_84E2
+C_84B6
+	SLA	R4,12
+	JEQ	C_84E2
+	JMP	C_84F6
+C_84BC
+	SLA	R4,14
+	JEQ	C_84E2
+	JMP	C_84F6
+C_84C2
+	MOV	R2,R4
+	SRL	R4,8
+	A	R7,R2
+	SLA	R4,14
+	JEQ	C_84E2
+	INCT	R2
+	JMP	C_84E2
+	JMP	C_84F6
+C_84D2
+	MOV	R2,R4
+	SRL	R4,8
+	A	R7,R2
+	SLA	R4,12
+	JEQ	C_84E2
+	INCT	R2
+	JMP	C_84E2
+	JMP	C_84F6
+C_84E2
+	AI	R2,0200h
+	MOV	R2,R4
+	SRL	R4,8
+	CI	R4,00B0h
+	JL	C_84F6
+	SETO	R2
+	CLR	@C_F03E
+C_84F6
+	LI	R1,C_F01C
+	MOV	R1,R0
+	SLA	R3,8
+	MOV	R2,*R0+
+	MOVB	R3,*R0+
+	;-----------------
+	;-- refresh xxx --
+C_8502
+	LI	R1,C_F014
+C_8506
+	MOV	R1,R0
+	MOV	*R1+,R2
+	MOV	*R1+,R3
+	INC	R2
+	JEQ	C_85BC
+	SRL	R3,8
+	MOV	R3,R9
+	AI	R9,0FFF4h
+	JEQ	C_852C
+	DEC	R9
+	JEQ	C_8534
+	DEC	R9
+	JEQ	C_853C
+	DEC	R9
+	JEQ	C_8542
+	SETO	R2
+	CLR	R3
+	JMP	C_85B6
+C_852C
+	AI	R2,0FE00h
+	INCT	R2
+	JMP	C_8546
+C_8534
+	AI	R2,0FF00h
+	INCT	R2
+	JMP	C_8546
+C_853C
+	AI	R2,0102h
+	JMP	C_8546
+C_8542
+	AI	R2,0202h
+C_8546
+	MOV	@C_F036,R4	;frame counter?
+	SLA	R4,13
+	JNE	C_8556
+	CI	R3,000Fh
+	JEQ	C_8556
+	INC	R3
+C_8556
+	LI	R5,00D8h
+	MOV	R2,R4
+	ANDI	R4,00FFh
+	S	R4,R5
+	ABS	R5
+	CI	R5,000Ah
+	JHE	C_859A
+	MOV	@C_F000,R5
+	MOV	R5,R6
+	MOV	R2,R4
+	SRL	R4,8
+	S	R4,R6
+	ABS	R6
+	CI	R6,0002h
+	JLE	C_85B2
+	AI	R5,0010h
+	MOV	R2,R4
+	SRL	R4,8
+	S	R4,R5
+	ABS	R5
+	CI	R5,0008h
+	JHE	C_859A
+
+	LI	R6,2	;?ham related?
+	MOV	R6,@C_F002
+
+	JMP	C_85B2
+C_859A
+	MOV	R2,R4
+	ANDI	R4,00FFh
+	CI	R4,00E0h
+	JHE	C_85B2
+	MOV	R2,R4
+	SRL	R4,8
+	CI	R4,00B0h
+	JL	C_85B0
+C_85B0
+	JMP	C_85DE
+C_85B2
+	SETO	R2
+	CLR	R3
+C_85B6	;-- --
+	MOV	R2,*R0+
+	SLA	R3,8
+	MOVB	R3,*R0
+	;-- --
+C_85BC
+	CI	R1,X_F01C
+	JNE	C_8506
+	;-- write $f014~$f01f to VRAM:1f10? --
+	LI	R9,7010h
+	BL	@C_007C	;[bios]VDP:make vram address(R9:value)->R9?
+	LI	R1,C_F014
+C_85CE
+	MOV	*R1+,R8
+	BL	@C_0178	;[bios]VDP:write one word(R9:vaddr,R8:val)?
+	CI	R1,X_F020
+	JNE	C_85CE
+	;-- --
+	B	@C_8688
+	;-- --
+C_85DE
+	MOV	@C_F01C,R4
+	INC	R4
+	JEQ	C_8624
+	MOV	R2,R5
+	INC	R5
+	JEQ	C_8624
+	MOV	R4,R6
+	ANDI	R6,00FFh
+	ANDI	R5,00FFh
+	CI	R6,00C0h
+	JHE	C_8624
+	LI	R11,0004h
+	A	R11,R5
+	AI	R6,0008h
+	S	R5,R6
+	ABS	R6
+	CI	R6,000Ch
+	JHE	C_8624
+	MOV	R2,R5
+	MOV	R4,R6
+	SRL	R5,8
+	SRL	R6,8
+	A	R11,R5
+	A	R11,R6
+	S	R5,R6
+	ABS	R6
+	C	R6,R11
+	JL	C_8670
+C_8624
+	LI	R4,C_F024
+C_8628
+	MOV	R4,R8
+	MOV	*R4+,R5
+	JNE	C_8638
+C_862E
+	INCT	R4
+	CI	R4,X_F02C
+	JNE	C_8628
+	JMP	C_85B6
+C_8638
+	MOV	R2,R6
+	MOV	R5,R7
+	ANDI	R6,00FFh
+	ANDI	R7,00FFh
+	INCT	R6
+	S	R6,R7
+	ABS	R7
+	CI	R7,0006h
+	JHE	C_862E
+	MOV	R2,R6
+	MOV	R5,R7
+	SRL	R6,8
+	SRL	R7,8
+	INCT	R6
+	S	R6,R7
+	ABS	R7
+	CI	R7,0006h
+	JHE	C_862E
+	MOV	*R5,R9
+	;-- [plop] --
+	LI	R9,C_9F12	;OFFSET C_9F12
+	BL	@C_0070	;[bios]start sound channel 2(R9:addr_data)?
+	;-- --
+	SETO	*R8
+C_8670
+	CLR	R3
+	SETO	R2
+	LI	R4,000Fh
+	DECT	R1
+	MOV	R4,*R1+
+
+	LI	R10,0202h	;200 pts
+	BL	@C_96C0	;score update + check extra life(R10)?
+
+	B	@C_85B6
+	;--------------------
+	;-- refresh arrows --
+C_8688
+	LI	R1,C_F024
+C_868C
+	MOV	R1,R0
+	MOV	*R1+,R2
+	MOV	*R1+,R3
+	INC	R2
+	JNE	C_86BE
+C_8696
+	SETO	R2
+C_8698
+	MOV	R2,*R0+
+	MOV	R3,*R0+
+	CI	R1,X_F02C
+	JNE	C_868C
+	;-- write $f024~$f02b to VRAM:1f08? --
+	LI	R9,7008h
+	BL	@C_007C	;[bios]VDP:make vram address(R9:value)->R9?
+	LI	R1,C_F024
+C_86AE
+	MOV	*R1+,R8
+	BL	@C_0178	;[bios]VDP:write one word(R9:vaddr,R8:val)?
+	CI	R1,X_F02C
+	JNE	C_86AE
+	;-- --
+	B	@C_86D0
+	;-- move 1 arrow --
+C_86BE
+	AI	R2,0FFF7h	;-9
+	MOV	R2,R5
+	ANDI	R5,00FFh
+	CI	R5,8
+	JLE	C_8696	;out of bounds->disable
+	JMP	C_8698
+	;-----------------
+	;-- refresh xxx --
+C_86D0
+	MOV	@C_F036,R4	;frame counter?
+	DEC	R4
+	SLA	R4,14
+	JNE	C_8748
+	;-- --
+	LI	R1,C_F004
+C_86DE
+	MOV	R1,R0
+	MOV	*R1+,R2
+	MOV	*R1+,R3
+	SRL	R3,8
+	CI	R3,10h
+	JEQ	C_8712
+	CI	R3,14h
+	JEQ	C_8712
+	CI	R3,18h
+	JEQ	C_870C
+	CI	R3,1Ch
+	JEQ	C_8712
+	CI	R3,20h
+	JEQ	C_874C
+	CI	R3,24h
+	JEQ	C_874C
+	JMP	C_8726
+C_870C	;-- $18 --
+	AI	R2,0FC00h
+	JMP	C_8716
+C_8712	;-- $10 $14 $1c --
+	AI	R2,0F400h
+C_8716
+	LI	R3,0030h
+	SLA	R3,8
+	MOV	R2,*R0+
+	AI	R3,0008h
+	MOV	R3,*R0
+	JMP	C_872A
+C_8726
+	SETO	R2
+	MOV	R2,*R0
+C_872A
+	CI	R1,X_F014
+	JNE	C_86DE
+	;-- write $f004~$f013 to VRAM:1F2C? --
+	LI	R9,702Ch
+	BL	@C_007C	;[bios]VDP:make vram address(R9:value)->R9?
+	LI	R1,C_F004
+C_873C
+	MOV	*R1+,R8
+	BL	@C_0178	;[bios]VDP:write one word(R9:vaddr,R8:val)?
+	CI	R1,X_F014
+	JNE	C_873C
+	;-- --
+C_8748
+	B	@C_8784
+C_874C	;-- $20 $24 --
+	MOV	R0,R9
+	LI	R8,C_F004
+	S	R8,R9
+	ABS	R9
+
+	AI	R9,702Ch	;VRAM:1F2C?
+	BL	@C_007C	;[bios]VDP:make vram address(R9:value)->R9?
+	MOV	R9,R7
+	MOV	R0,R1
+	BL	@C_017C	;[bios]VDP:read one word(R9:vaddr)->R8(R7+=2)?
+	MOV	R8,*R1+
+	BL	@C_017C	;[bios]VDP:read one word(R9:vaddr)->R8(R7+=2)?
+	MOV	R8,*R1
+	MOV	*R1+,R3
+	SRL	R3,8
+	CI	R3,37h
+	JHE	C_8726
+
+	INC	R3
+	SLA	R3,8
+	DECT	R1
+	MOVB	R3,*R1+
+	INC	R1
+	JMP	C_872A
+	;-- --
+C_8784
+	;-- read $f004~$f013 from VRAM:1F2C? --
+	LI	R9,702Ch
+	BL	@C_007C	;[bios]VDP:make vram address(R9:value)->R9?
+	LI	R1,C_F004
+	MOV	R9,R7
+C_8792
+	BL	@C_017C	;[bios]VDP:read one word(R9:vaddr)->R8(R7+=2)?
+	MOV	R8,*R1+
+	CI	R1,X_F014
+	JNE	C_8792
+	;-----------------
+	;-- refresh xxx --
+	LI	R1,C_F004
+C_87A2
+	MOV	R1,R0
+	MOV	*R1+,R2
+	MOV	*R1+,R3
+	CI	R2,0FF00h
+	JEQ	C_8820
+	CI	R2,0FFFFh
+	JEQ	C_8820
+	SRL	R3,8
+	CI	R3,0030h
+	JEQ	C_87BE
+	JMP	C_8820
+C_87BE
+	LI	R4,C_F024
+C_87C2
+	MOV	R4,R5
+	MOV	*R4+,R6
+	MOV	*R4+,R7
+	INC	R6
+	JNE	C_87DA
+	SETO	R6
+C_87CE
+	MOV	R6,*R5+
+	MOV	R7,*R5+
+	CI	R5,X_F02C
+	JNE	C_87C2
+	JMP	C_8820
+C_87DA
+	MOV	R2,R9
+	MOV	R6,R10
+	AI	R9,0808h
+	SRL	R9,8
+	SRL	R10,8
+	S	R9,R10
+	ABS	R10
+	CI	R10,0008h
+	JHE	C_87CE
+	MOV	R2,R9
+	MOV	R6,R10
+	AI	R9,0404h
+	SLA	R9,8
+	SLA	R10,8
+	SWPB	R9
+	SWPB	R10
+	S	R10,R9
+	ABS	R9
+	CI	R9,0006h
+	JHE	C_87CE
+	SETO	*R5
+
+	LI	R10,0202h	;200 pts
+	BL	@C_96C0	;score update + check extra life(R10)?
+
+	LI	R3,0034h
+	;-- [plop] --
+	LI	R9,C_9F12	;OFFSET C_9F12
+	BL	@C_0070	;[bios]start sound channel 2(R9:addr_data)?
+	;-- --
+C_8820
+	SLA	R3,8
+	MOV	R2,*R0+
+	MOVB	R3,*R0+
+	CI	R1,X_F014
+	JNE	C_87A2
+	;-- write $f004~$f013 to VRAM:1F2C? --
+	LI	R9,702Ch
+	BL	@C_007C	;[bios]VDP:make vram address(R9:value)->R9?
+	LI	R1,C_F004
+C_8838
+	MOV	*R1+,R8
+	BL	@C_0178	;[bios]VDP:write one word(R9:vaddr,R8:val)?
+	CI	R1,X_F014
+	JNE	C_8838
+	;-- read $f004~$f013 from VRAM:1F1C? --
+	LI	R1,C_F004
+	LI	R9,701Ch
+	BL	@C_007C	;[bios]VDP:make vram address(R9:value)->R9?
+	MOV	R9,R7
+C_8852
+	BL	@C_017C	;[bios]VDP:read one word(R9:vaddr)->R8(R7+=2)?
+	MOV	R8,*R1+
+	MOV	R1,R0
+	MOV	*R1+,R2
+	SRL	R2,8
+	CI	R2,34h
+	JEQ	C_886C
+	BL	@C_017C	;[bios]VDP:read one word(R9:vaddr)->R8(R7+=2)?
+	MOV	R8,*R0
+	JMP	C_887A
+C_886C
+	LI	R2,20h
+	INCT	R7
+	SLA	R2,8
+	AI	R2,8
+	MOV	R2,*R0
+C_887A
+	CI	R1,X_F014
+	JNE	C_8852
+	;--     --
+	;---------
+
+	;-- --
+	BL	@C_88BE
+	BL	@C_8D06
+	BL	@C_8E1A	;refresh shoot
+	BL	@C_8EBC	;refresh graphic:ladder wolves/boulder?
+	INC	@C_F036	;frame counter?
+	BL	@C_929C	;refresh something/manage game over?
+	;-- --
+	B	@C_831E
+	;-- end main loop? --
+	;--------------------
+;----------------------------------------
+;calls 3x "cpu to VRAM memcpy(R9:value_dst,R10:size,R8:src)"?
+C_889C
+	MOV	R11,@C_F04C
+	;-- --
+	LI	R6,3
+	ANDI	R9,0FFFh
+	AI	R9,3000h
+C_88AC
+	AI	R9,1000h
+	BL	@C_00A0	;[bios]cpu to vram memcpy(R9:value_dst,R10:size,R8:src)?
+	DEC	R6
+	JNE	C_88AC
+	;-- --
+	MOV	@C_F04C,R11
+	RT
+;----------------------------------------
+C_88BE
+	MOV	R11,@C_F04A
+	;-- --
+	MOV	@C_F044,R5
+	CI	R5,4
+	JH	C_88DE
+
+	LI	R0,C_F004
+C_88D0_j
+	MOV	*R0+,R2
+	INC	R2
+	JNE	C_894E
+	INCT	R0
+	CI	R0,X_F014
+	JNE	C_88D0_j
+
+C_88DE
+	LI	R1,C_F004
+C_88E2
+	MOV	*R1+,R2
+	INC	R2
+	JEQ	C_88F2
+	INCT	R1
+	CI	R1,X_F014
+	JNE	C_88E2
+C_88F0
+	JMP	C_894E
+C_88F2
+	MOV	@C_F036,R4	;frame counter?
+	SLA	R4,14
+	JNE	C_88F0
+
+	MOV	@C_F03C,R4
+	JEQ	C_8906
+	DEC	@C_F03C
+	JMP	C_88F0
+C_8906
+
+	INCT	@C_F03A	;pointer to table C_9E36
+	MOV	@C_F03A,R4	;pointer to table C_9E36
+	MOV	R4,R6
+	LI	R5,C_9E36	;OFFSET C_9E36
+	S	R5,R6
+	ABS	R6
+	CI	R6,20h
+	JL	C_8926
+	LI	R4,C_9E36	;OFFSET C_9E36
+	MOV	R4,@C_F03A	;pointer to table C_9E36
+C_8926
+	MOV	*R4,R5
+	SRL	R5,8
+	MOV	R5,@C_F03C
+
+	MOV	@C_F046,R4
+	SLA	R4,15
+	JEQ	C_893C
+	LI	R2,0B000h
+	JMP	C_8940
+C_893C
+	LI	R2,1000h
+C_8940
+	LI	R3,28h
+	SLA	R3,8
+	DECT	R1
+	MOV	R2,*R1+
+	MOVB	R3,*R1+
+	JMP	C_88F0
+C_894E
+	LI	R1,C_F004
+C_8952
+	MOV	R1,R0
+	MOV	*R1+,R2
+	MOV	*R1+,R3
+	MOV	R3,R5
+	SRL	R3,8
+	INC	R2
+	JEQ	C_89AE
+	DEC	R2
+	CI	R3,0020h
+	JEQ	C_896E
+	CI	R3,0024h
+	JNE	C_89A2
+C_896E
+	MOV	@C_F036,R4	;frame counter?
+	SLA	R4,15
+	JNE	C_8986
+
+	CI	R3,0020h
+	JEQ	C_8982
+	LI	R3,0020h
+	JMP	C_8986
+C_8982
+	LI	R3,0024h
+C_8986
+	AI	R2,0200h
+	DECT	R1
+	LI	R4,000Ah
+	MOV	R4,*R1+
+	MOV	R2,R4
+	SRL	R4,8
+	CI	R4,00AFh
+	JHE	C_899E
+	JMP	C_8A00
+C_899E
+	B	@C_8B0A
+C_89A2
+	MOV	@C_F046,R10
+	SLA	R10,15
+	JEQ	C_89B2
+	B	@C_8B82
+C_89AE
+	DEC	R2
+	JMP	C_8A00
+C_89B2
+	MOV	@C_F036,R4	;frame counter?
+	MOV	R4,R5
+	SLA	R4,15
+	JNE	C_8A00
+	CI	R3,10h
+	JEQ	C_8A36
+	CI	R3,14h
+	JEQ	C_8A3C
+	CI	R3,18h
+	JNE	C_89E0
+
+	MOV	@C_F036,R10	;frame counter?
+	SLA	R10,12
+	JNE	C_89DE
+	LI	R3,0010h
+	AI	R2,0500h
+C_89DE
+	JMP	C_8A40
+C_89E0
+	CI	R3,001Ch
+	JNE	C_89EC
+	SLA	R5,11
+	JEQ	C_8A3C
+	JMP	C_8A40
+C_89EC
+	CI	R3,28h
+	JEQ	C_8A60
+	CI	R3,002Ch
+	JEQ	C_8A60
+	SLA	R5,14
+	JNE	C_8A00
+	LI	R3,0020h
+C_8A00
+	SLA	R3,8
+	MOV	R2,*R0+
+	MOVB	R3,*R0
+	MOV	*R0,R3
+	ANDI	R3,0FF00h
+	AI	R3,000Ah
+	MOV	R3,*R0
+	CI	R1,X_F014
+	JL	C_8952
+	;-- write $f004~$f013 to VRAM:1F1C? --
+	LI	R1,C_F004
+	LI	R9,701Ch
+	BL	@C_007C	;[bios]VDP:make vram address(R9:value)->R9?
+C_8A24
+	MOV	*R1+,R8
+	BL	@C_0178	;[bios]VDP:write one word(R9:vaddr,R8:val)?
+
+	CI	R1,X_F014
+	JNE	C_8A24
+	;-- --
+	MOV	@C_F04A,R11
+	RT
+	;-- --
+C_8A36
+	LI	R3,0014h
+	JMP	C_8A40
+C_8A3C	;-- --
+	LI	R3,0010h
+C_8A40	;-- --
+	BL	@C_8B16
+	AI	R2,0100h
+	MOV	R2,R4
+	SRL	R4,8
+	CI	R4,00AFh
+	JL	C_8A00
+	LI	R3,28h
+	ANDI	R2,00FFh
+	AI	R2,0B000h
+	JMP	C_8A00
+C_8A60	;-- --
+	MOV	@C_F036,R4	;frame counter?
+	SLA	R4,14
+	JNE	C_8A78
+	CI	R3,002Ch
+	JEQ	C_8A74
+	LI	R3,002Ch
+	JMP	C_8A78
+C_8A74
+	LI	R3,28h
+C_8A78
+	INC	R2
+	MOV	R2,R4
+	SRL	R4,8
+	CI	R4,0018h
+	JLE	C_8AB4
+	MOV	R2,R4
+	ANDI	R4,00FFh
+	CI	R4,00FFh
+	JHE	C_8A94
+	B	@C_8A00
+C_8A94
+	;-- --
+	LI	R7,X_F034
+C_8A98
+	DECT	R7
+	MOV	*R7,R4
+	CI	R4,0
+	JEQ	C_8AAA
+	CI	R7,X_F02C
+	JNE	C_8A98
+	JMP	C_8AAC
+C_8AAA
+	INC	*R7
+C_8AAC
+	SETO	R2
+	SETO	R3
+
+	B	@C_8A00
+	;-- --
+C_8AB4
+	MOV	@C_F03A,R4	;pointer to table C_9E36
+	CI	R0,C_F004	;enemy 1
+	JEQ	C_8ADA
+	CI	R0,C_F008	;enemy 2
+	JEQ	C_8AE2
+	CI	R0,C_F00C	;enemy 3
+	JEQ	C_8AEA
+	CI	R0,C_F010	;enemy 4
+	JEQ	C_8AD4
+	B	@C_8A00
+C_8AD4	;-- enemy 4 --
+	DECT	R4
+	MOV	*R4,R5
+
+	JMP	C_8AF0
+C_8ADA	;-- enemy 1 --
+	AI	R4,0FFF8h	;-8
+	MOV	*R4,R5
+
+	JMP	C_8AF0
+C_8AE2	;-- enemy 2 --
+	AI	R4,0FFFAh	;-6
+	MOV	*R4,R5
+
+	JMP	C_8AF0
+C_8AEA	;-- enemy 3 --
+	AI	R4,0FFFCh	;-4
+	MOV	*R4,R5
+
+C_8AF0	;-- --
+	MOV	R2,R4
+	ANDI	R4,0FFh
+	ANDI	R5,0FFh
+	C	R4,R5
+	JHE	C_8B02
+	B	@C_8A00
+C_8B02
+	LI	R3,0010h
+	B	@C_8A00
+C_8B0A
+	DEC	@C_F044
+	SETO	R2
+	SETO	R3
+	B	@C_8A00
+;----------------------------------------
+C_8B16
+	MOV	R11,@C_F04C
+	;-- --
+	MOV	R2,R5
+	MOV	@C_F01C,R6
+	ANDI	R5,00FFh
+	ANDI	R6,00FFh
+	S	R5,R6
+	ABS	R6
+	CI	R6,10h
+	JHE	C_8B7C
+	MOV	R2,R5
+	MOV	@C_F01C,R6
+	SRL	R6,8
+	SRL	R5,8
+	AI	R6,4
+	S	R6,R5
+	ABS	R5
+	CI	R5,10h
+	JHE	C_8B7C
+	LI	R4,1
+	MOV	R0,R6
+	MOV	@C_F03E,R0
+	JEQ	C_8B62
+	CI	R0,3
+	JL	C_8B60
+	LI	R0,2
+C_8B60
+	SLA	R4,0
+C_8B62
+	LI	R10,0402h	;400 pts
+	BL	@C_96C0	;score update + check extra life(R10)?
+
+	DEC	R4
+	JNE	C_8B62
+	;-- --
+	MOV	R6,R0
+	INC	@C_F03E
+	LI	R3,00FFh
+	B	@C_8A00
+	;-- --
+C_8B7C
+	MOV	@C_F04C,R11
+	RT
+;----------------------------------------
+C_8B82
+	MOV	@C_F036,R4	;frame counter?
+	MOV	R4,R5
+	SLA	R5,15
+	JNE	C_8BC8
+	CI	R3,10h
+	JEQ	C_8BA6
+	CI	R3,14h
+	JEQ	C_8BA6
+	CI	R3,1Ch
+	JNE	C_8BF4
+
+	MOV	@C_F036,R4	;frame counter?
+	SLA	R4,11
+	JNE	C_8BB6
+C_8BA6
+	CI	R3,10h
+	JNE	C_8BB2
+	LI	R3,14h
+	JMP	C_8BB6
+C_8BB2
+	LI	R3,10h
+C_8BB6
+	AI	R2,0FF00h
+	BL	@C_8B16
+C_8BBE
+	MOV	R2,R4
+	SRL	R4,8
+	CI	R4,10h
+	JLE	C_8BCC
+C_8BC8
+	B	@C_8CA8
+C_8BCC
+	ANDI	R2,00FFh
+	MOV	@C_F02C,R4
+	CI	R4,7
+	JH	C_8BEC
+	MOV	R2,R9
+	AI	R2,1000h
+	CI	R9,0048h
+	JH	C_8BEC
+	LI	R3,28h
+	JMP	C_8BF0
+C_8BEC
+	LI	R3,003Ch
+C_8BF0
+	B	@C_8CA8
+C_8BF4
+	CI	R3,18h
+	JNE	C_8C16
+	BL	@C_8B16
+
+	MOV	@C_F036,R10	;frame counter?
+	SLA	R10,11
+	JNE	C_8C12
+	LI	R3,0010h
+	AI	R2,0500h
+	B	@C_8BBE
+C_8C12
+	B	@C_8BB6
+C_8C16
+	CI	R3,002Ch
+	JEQ	C_8C22
+	CI	R3,28h
+	JNE	C_8C98
+C_8C22
+	MOV	@C_F036,R4	;frame counter?
+	SLA	R4,14
+	JNE	C_8C3A
+	CI	R3,002Ch
+	JEQ	C_8C36
+	LI	R3,002Ch
+	JMP	C_8C3A
+C_8C36
+	LI	R3,28h
+C_8C3A
+	INC	R2
+	MOV	R2,R4
+	SRL	R4,8
+	CI	R4,0A8h
+	JL	C_8CAC
+	;-- --
+	MOV	@C_F03A,R4	;pointer to table C_9E36
+	CI	R0,C_F004	;enemy 1
+	JEQ	C_8C68
+	CI	R0,C_F008	;enemy 2
+	JEQ	C_8C70
+	CI	R0,C_F00C	;enemy 3
+	JEQ	C_8C78
+	CI	R0,C_F010	;enemy 4
+	JNE	C_8CA8
+	;
+	;-- enemy 4 --
+	DECT	R4
+	MOV	*R4,R5
+
+	JMP	C_8C7E
+C_8C68	;-- enemy 1 --
+	AI	R4,0FFF8h	;-8
+	MOV	*R4,R5
+
+	JMP	C_8C7E
+C_8C70	;-- enemy 2 --
+	AI	R4,0FFFAh	;-6
+	MOV	*R4,R5
+
+	JMP	C_8C7E
+C_8C78	;-- enemy 3 --
+	AI	R4,0FFFCh	;-4
+	MOV	*R4,R5
+	;-- --
+C_8C7E
+	MOV	R2,R4
+	ANDI	R4,0FFh
+	ANDI	R5,0FFh
+	S	R4,R5
+	ABS	R5
+	CI	R5,0005h
+	JH	C_8CA8
+	LI	R3,0010h
+	JMP	C_8CA8
+C_8C98
+	CI	R3,003Ch
+	JEQ	C_8CCA
+	CI	R3,0040h
+	JEQ	C_8CCA
+	LI	R3,0020h
+C_8CA8
+	B	@C_8A00
+C_8CAC
+	MOV	@C_F036,R4	;frame counter?
+	SLA	R4,14
+	JNE	C_8CC4
+	CI	R3,28h
+	JEQ	C_8CC0
+	LI	R3,28h
+	JMP	C_8CC4
+C_8CC0
+	LI	R3,002Ch
+C_8CC4
+	LI	R12,0001h
+	JMP	C_8CE6
+C_8CCA
+	MOV	@C_F036,R4	;frame counter?
+	SLA	R4,14
+	JNE	C_8CE2
+	CI	R3,003Ch
+	JEQ	C_8CDE
+	LI	R3,003Ch
+	JMP	C_8CE2
+C_8CDE
+	LI	R3,0040h
+C_8CE2
+	LI	R12,0FFFFh
+C_8CE6
+	A	R12,R2
+	MOV	R2,R12
+	ANDI	R12,00FFh
+	AI	R12,0FFB8h
+	ABS	R12
+	CI	R12,0002h
+	JH	C_8D02
+	SETO	R2
+	CLR	R3
+	INC	@C_F02C
+C_8D02
+	B	@C_8A00
+;----------------------------------------
+C_8D06
+	MOV	R11,@C_F04A
+	;-- --
+	LI	R1,C_F004
+C_8D0E
+	MOV	R1,R5
+	MOV	*R5+,R2
+	MOV	*R5,R3
+	SRL	R3,8
+	CI	R3,10h
+	JEQ	C_8D22
+	CI	R3,14h
+	JNE	C_8DAE
+C_8D22
+	MOV	@C_F046,R0
+	MOV	@C_F048,R7
+	A	R7,R0
+	AI	R0,0008h
+	LI	R10,0002h
+	BL	@C_00D8	;[bios]random->$F06A?
+	A	R10,R0
+	CI	R0,000Fh
+	JLE	C_8D44
+	LI	R0,000Fh
+C_8D44
+	MOV	@C_F036,R6	;frame counter?
+	SLA	R6,0
+	JNE	C_8DAE
+	MOV	R2,R7
+	MOV	@C_F000,R6
+	AI	R6,0008h
+	MOV	@C_F046,R9
+	SLA	R9,15
+	JEQ	C_8D62
+	AI	R6,0018h
+C_8D62
+	SRL	R7,8
+	S	R6,R7
+	ABS	R7
+	CI	R7,0010h
+	JH	C_8DA6
+	LI	R6,C_F014
+C_8D72
+	MOV	*R6+,R7
+	INC	R7
+	JEQ	C_8D82
+	INCT	R6
+	CI	R6,X_F01C
+	JNE	C_8D72
+	JMP	C_8DA6
+C_8D82
+	DECT	R6
+	MOV	R2,R8
+	MOV	@C_F046,R9
+	SLA	R9,15
+	JEQ	C_8D94
+	AI	R8,C_F008
+	JMP	C_8D98
+C_8D94
+	AI	R8,0808h
+C_8D98
+	LI	R3,001Ch
+	MOV	R8,*R6+
+	LI	R8,0C0Ah
+	MOV	R8,*R6
+	JMP	C_8DAE
+C_8DA6
+	LI	R3,0018h
+	AI	R2,0FA00h
+C_8DAE
+	LI	R4,C_F024
+C_8DB2
+	MOV	*R4,R5
+	LI	R11,000Ah
+	MOV	R2,R7
+	SRL	R5,8
+	SRL	R7,8
+	A	R11,R7
+	S	R7,R5
+	ABS	R5
+	C	R5,R11
+	JH	C_8DE0
+	MOV	*R4,R5
+	MOV	R2,R7
+	ANDI	R5,00FFh
+	ANDI	R7,00FFh
+	A	R11,R7
+	S	R7,R5
+	ABS	R5
+	C	R5,R11
+	JH	C_8DE0
+	SETO	*R4
+C_8DE0
+	INCT	R4
+	INCT	R4
+	CI	R4,X_F02C
+	JL	C_8DB2
+	MOV	R2,*R1+
+	SLA	R3,8
+	MOVB	R3,*R1+
+	INC	R1
+	CI	R1,X_F014
+	JEQ	C_8DFC
+	B	@C_8D0E
+C_8DFC
+	;-- write $f004~$f013 to VRAM:1F1C? --
+	LI	R1,C_F004
+	LI	R9,701Ch
+	BL	@C_007C	;[bios]VDP:make vram address(R9:value)->R9?
+C_8E08
+	MOV	*R1+,R8
+	BL	@C_0178	;[bios]VDP:write one word(R9:vaddr,R8:val)?
+
+	CI	R1,X_F014
+	JNE	C_8E08
+	;-- --
+	MOV	@C_F04A,R11
+	RT
+;----------------------------------------
+;refresh shoot
+C_8E1A
+	MOV	R11,@C_F04C
+	;-- --
+	MOV	@C_F002,R1
+	CI	R1,2
+	JEQ	C_8E76	;return
+
+	BL	@C_01B4	;[bios]get player count->R12?
+	SRL	R12,15
+	MOV	R12,R7
+	BL	@C_00F0	;[bios]something with joypads[bis](R7:index)?
+	B	@C_8E3A	;pressed
+	JMP	C_8E76	;not pressed->return
+	;-- pressed --
+C_8E3A
+	CI	R8,0
+	JEQ	C_8E76	;return
+	SLA	R8,15
+	JNE	C_8E76	;return
+	;-- shoot --
+	MOV	@C_F002,R2
+	CI	R2,1
+	JNE	C_8E62
+	;-- has ham --
+	LI	R1,C_F01C
+	INCT	R1
+	MOV	*R1,R2
+	AI	R2,100h
+	MOV	R2,*R1
+
+	CLR	@C_F002	;no more ham
+
+	JMP	C_8E76	;return
+C_8E62
+	;-- arrow --
+	LI	R1,C_F024
+C_8E66
+	MOV	R1,R0
+	MOV	*R1+,R2
+	MOV	*R1+,R3
+	INC	R2
+	JEQ	C_8E7C	;found available arrow
+	CI	R1,X_F02C
+	JNE	C_8E66
+	;-- --
+C_8E76
+	MOV	@C_F04C,R11
+	RT
+	;-- --
+C_8E7C
+	;-- check shoot arrow --
+	LI	R1,C_F024
+C_8E80
+	MOV	*R1+,R2
+	MOV	*R1+,R3
+	INC	R2
+	JNE	C_8E90
+	CI	R1,X_F02C
+	JNE	C_8E80	;found shoot arrow
+	JMP	C_8EA0	;now arrow shoot yet
+C_8E90
+	;-- found shoot arrow: check distance --
+	ANDI	R2,0FFh
+	AI	R2,0FF30h	;-$d0
+	ABS	R2
+	CI	R2,60h
+	JLE	C_8E76	;too close yet->return
+	;-- shoot arrow --
+C_8EA0
+	MOV		@C_F000,R4
+	AI		R4,11h
+	SLA		R4,8
+	AI		R4,0D0h
+	MOV		R4,*R0+
+	LI		R4,380Ah
+	MOV		R4,*R0
+
+	BL		@C_0138	;[bios]sound_2?
+
+	JMP		C_8E76	;return
+;----------------------------------------
+;refresh graphic:ladder wolves/boulder?
+C_8EBC
+	MOV	R11,@C_F04A
+	;-- --
+	MOV	@C_F046,R0
+	SLA	R0,15
+	JEQ	C_8ECC
+	B	@C_8F94
+;---- [level 1,3,5,...]animate wolves on ladder ----
+C_8ECC
+	LI	R1,C_F02C
+C_8ED0
+	MOV	R1,R4
+	LI	R3,C_F02C
+	S	R3,R4
+	ABS	R4
+	SRL	R4,1
+	SLA	R4,7
+	LI	R9,00FBh
+	A	R4,R9
+	MOV	*R1,R2
+	JLE	C_8F1E	;to next wolf
+	INC	R2
+
+	CI	R2,01h
+	JEQ	C_8F2C
+	CI	R2,10h
+	JLE	C_8F1E	;to next wolf
+
+	CI	R2,11h
+	JEQ	C_8F32
+	CI	R2,2Eh
+	JLE	C_8F1E	;to next wolf
+
+	CI	R2,2Fh
+	JEQ	C_8F38
+	CI	R2,42h
+	JLE	C_8F1E	;to next wolf
+
+	CI	R2,43h
+	JEQ	C_8F3E
+	CI	R2,56h
+	JLE	C_8F4A
+	;-- when aboe $56 set counter to $10 --
+	LI	R2,10h
+	;-- --
+C_8F1E
+	MOV	R2,*R1+
+	CI	R1,X_F034
+	JNE	C_8ED0
+	;-- --
+	MOV	@C_F04A,R11
+	RT
+;-- $01 --
+C_8F2C
+	LI	R8,C_9BD6	;OFFSET C_9BD6	;ladder wolf #1
+	JMP	C_8F76
+;-- $11 --
+C_8F32
+	LI	R8,C_9BDC	;OFFSET C_9BDC	;ladder wolf #2
+	JMP	C_8F76
+;-- $2F --
+C_8F38
+	LI	R8,C_9BE2	;OFFSET C_9BE2	;ladder wolf #3
+	JMP	C_8F76
+;-- $43 --
+C_8F3E
+	;-- [howling] --
+	MOV	R9,R0
+	LI	R9,C_9DD6	;OFFSET C_9DD6
+	BL	@C_0070	;[bios]start sound channel 2(R9:addr_data)?
+	MOV	R0,R9
+	;-- --
+;-- $44~$56 --
+C_8F4A
+	MOV	R9,R0
+	;-- --
+	BL	@C_01D4	;[bios]make some VDP address(R9)->R9?
+	;(x == 0)
+	JMP	C_8F52
+C_8F52
+	JMP	C_8F54
+	;(x != 0)
+C_8F54
+	MOV	@C_F000,R6
+	SRL	R9,8
+	AI	R6,8
+	S	R9,R6
+	ABS	R6
+	CI	R6,0Dh
+	JHE	C_8F70
+
+	LI	R6,2	;?ham related?
+	MOV	R6,@C_F002
+C_8F70
+	;-- --
+	MOV	R0,R9
+
+	LI	R8,C_9BE8	;OFFSET C_9BE8	;ladder wolf #4
+;----
+C_8F76
+	LI	R4,2
+C_8F7A
+	LI	R3,3
+C_8F7E
+	BL	@C_00A4	;[bios]putchar(R8:char,R9:pos)?
+	INC	R8
+	INC	R9
+	DEC	R3
+	JNE	C_8F7E
+	DEC	R4
+	JEQ	C_8F1E	;to next wolf
+
+	AI	R9,001Dh
+	JMP	C_8F7A
+;---- [level 2,4,6,...] ----
+C_8F94
+	LI	R9,0049h
+
+	MOV	@C_F02C,R7
+	JEQ	C_8FF4
+	CI	R7,7
+	JH	C_9032
+
+	MOV	@C_F036,R4	;frame counter?
+	MOV	R4,R5
+	SLA	R4,14
+	JNE	C_9086	;return
+	SLA	R5,13
+	JEQ	C_8FB8
+
+	LI	R8,C_9C24	;OFFSET C_9C24
+	JMP	C_8FCE
+C_8FB8
+	LI	R8,C_9C28	;OFFSET C_9C28
+	MOV	R9,R5
+	BL	@C_908C	;(R8:4xarray,R9:pos)?
+	MOV	R5,R9
+	INCT	R9
+	DEC	R7
+	JEQ	C_8FF4
+
+	LI	R8,C_9C2C	;OFFSET C_9C2C
+C_8FCE
+	MOV	R9,R5
+	MOV	R8,R6
+	BL	@C_908C	;(R8:4xarray,R9:pos)?
+	MOV	R5,R9
+	MOV	R6,R8
+	INCT	R9
+	DEC	R7
+	JNE	C_8FCE
+	;-- --
+	MOV	@C_F036,R4	;frame counter?
+	SLA	R4,10
+	JNE	C_8FF4
+	;-- [howling] --
+	MOV	R9,R5
+	LI	R9,C_9DD6	;OFFSET C_9DD6
+	BL	@C_0070	;[bios]start sound channel 2(R9:addr_data)?
+	MOV	R5,R9
+	;-- --
+C_8FF4
+	MOV	@C_F02C,R7
+	CI	R7,7
+	JEQ	C_9012
+	;-- --
+	LI	R8,C_9C30	;OFFSET C_9C30	;boulder
+	MOV	R9,R5
+	BL	@C_908C	;(R8:4xarray,R9:pos)?
+	MOV	R5,R9
+	INCT	R9
+	BL	@C_908C	;(R8:4xarray,R9:pos)?
+
+	JMP	C_9086	;return
+	;-- --
+C_9012
+	LI	R8,C_9B9A	;OFFSET C_9B9A
+	BL	@C_00A4	;[bios]putchar(R8:char,R9:pos)?
+	INC	R9
+	BL	@C_00A4	;[bios]putchar(R8:char,R9:pos)?
+	AI	R9,1Fh
+	BL	@C_00A4	;[bios]putchar(R8:char,R9:pos)?
+	INC	R9
+	BL	@C_00A4	;[bios]putchar(R8:char,R9:pos)?
+
+	INC	@C_F02C
+	;-- --
+C_9032
+	LI	R1,C_F030
+	MOV	*R1,R2
+
+	MOV	R2,R5
+	MOV	@C_F000,R6
+	SRL	R5,8
+	S	R5,R6
+	ABS	R6
+	CI	R6,10h
+	JH	C_9052
+	LI	R6,2
+	MOV	R6,@C_F002
+C_9052
+
+	AI	R2,200h
+	MOV	R2,*R1+
+	LI	R3,0006h
+	MOV	R3,*R1+
+	MOV	*R1,R2
+	AI	R2,200h
+	MOV	R2,*R1+
+	LI	R3,0406h
+	MOV	R3,*R1
+	;-- write $f030~$f033 to VRAM:1f00? --
+	LI	R9,7000h
+	BL	@C_007C	;[bios]VDP:make vram address(R9:value)->R9?
+	LI	R1,C_F030
+	LI	R4,4
+C_907C
+	MOV	*R1+,R8
+	BL	@C_0178	;[bios]VDP:write one word(R9:vaddr,R8:val)?
+	DEC	R4
+	JNE	C_907C
+	;-- --
+C_9086
+	MOV	@C_F04A,R11
+	RT
+;----------------------------------------
+;(R8:4xarray,R9:pos)?
+C_908C
+	MOV	R11,@C_F04E
+	;-- --
+	LI	R4,2
+C_9094
+	BL	@C_00A4	;[bios]putchar(R8:char,R9:pos)?
+	INC	R8
+	INC	R9
+	DEC	R4
+	JNE	C_9094
+
+	AI	R9,1Eh
+
+	LI	R4,2
+C_90A8
+	BL	@C_00A4	;[bios]putchar(R8:char,R9:pos)?
+	INC	R8
+	INC	R9
+	DEC	R4
+	JNE	C_90A8
+	;-- --
+	MOV	@C_F04E,R11
+	RT
+;----------------------------------------
+;init level?
+C_90BA
+	MOV	R11,@C_F04E
+	;-- --
+	MOV	@C_F046,R7
+
+	SLA	R7,15
+	SRL	R7,15
+	JEQ	C_90CE
+	LI	R8,C_9B7A	;OFFSET C_9B7A
+	JMP	C_90D2
+C_90CE
+	LI	R8,C_9AE2	;OFFSET C_9AE2
+C_90D2
+
+	LI	R9,4380h
+	LI	R10,8
+	LI	R5,4
+C_90DE
+	LI	R4,3
+C_90E2
+	BL	@C_00A0	;[bios]cpu to vram memcpy(R9:value_dst,R10:size,R8:src)?
+
+	AI	R9,1000h
+	DEC	R4
+	JNE	C_90E2
+
+	AI	R9,0D000h	;-3000h
+	AI	R9,8
+	DEC	R5
+	JNE	C_90DE
+	;-- --
+	MOV	R7,R3
+	JEQ	C_9104
+	LI	R8,C_9B82	;OFFSET C_9B82
+	JMP	C_9108
+C_9104
+	LI	R8,C_9ACA	;OFFSET C_9ACA
+C_9108
+
+	LI	R9,43A0h
+	LI	R10,8
+	LI	R5,2
+C_9114
+	LI	R4,3
+C_9118
+	BL	@C_00A0	;[bios]cpu to vram memcpy(R9:value_dst,R10:size,R8:src)?
+
+	AI	R9,1000h
+	DEC	R4
+	JNE	C_9118
+
+	AI	R9,0D000h	;-3000h
+	AI	R9,8
+	DEC	R5
+	JNE	C_9114
+	;-- --
+	MOV	R7,R5
+	JEQ	C_916E
+	;--  not 0 --
+	LI	R8,C_9B9A	;OFFSET C_9B9A
+
+	LI	R9,9Bh
+	LI	R5,12h
+C_9140
+	BL	@C_00A4	;[bios]putchar(R8:char,R9:pos)?
+	AI	R9,20h
+	DEC	R5
+	JNE	C_9140
+
+	AI	R9,0FFDFh
+	BL	@C_00A4	;[bios]putchar(R8:char,R9:pos)?
+
+	LI	R8,C_9BA2	;OFFSET C_9BA2	;mama-pig patterns #1
+	LI	R9,9Ah
+	LI	R5,0Dh
+C_9160
+	BL	@C_00A4	;[bios]putchar(R8:char,R9:pos)?
+	AI	R9,20h
+	DEC	R5
+	JNE	C_9160
+
+	JMP	C_919A
+	;-- 0 --
+C_916E
+	LI	R8,C_9B9A	;OFFSET C_9B9A
+
+	LI	R9,13Ah
+	LI	R5,0Dh
+C_917A
+	BL	@C_00A4	;[bios]putchar(R8:char,R9:pos)?
+	AI	R9,20h
+	DEC	R5
+	JNE	C_917A
+
+	LI	R9,13Bh
+	LI	R5,0Dh
+C_918E
+	BL	@C_00A4	;[bios]putchar(R8:char,R9:pos)?
+	AI	R9,20h
+	DEC	R5
+	JNE	C_918E
+	;-- --
+C_919A
+	LI	R8,C_9B9A	;OFFSET C_9B9A
+
+	LI	R9,45h
+	LI	R5,15h
+C_91A6
+	BL	@C_00A4	;[bios]putchar(R8:char,R9:pos)?
+	INC	R9
+	DEC	R5
+	JNE	C_91A6
+
+	LI	R9,65h
+	LI	R5,15h
+C_91B8
+	BL	@C_00A4	;[bios]putchar(R8:char,R9:pos)?
+	INC	R9
+	DEC	R5
+	JNE	C_91B8
+	;-- draw mama-pig at start position --
+	MOV	R7,R5
+	JEQ	C_91D0
+
+	LI	R9,82D0h
+	LI	R1,8Ah
+
+	JMP	C_91D8
+C_91D0
+	LI	R9,20D0h
+	LI	R1,28h
+C_91D8
+	MOV	R1,@C_F000
+
+	LI	R8,C_9BA2	;OFFSET C_9BA2	;mama-pig patterns #1
+	BL	@C_83D2	;set mama-pig patterns(R8,R9)?
+	;-- tree design --
+	LI	R8,C_9BD4	;OFFSET C_9BD4
+	A	R7,R8
+	LI	R1,C_9C48	;OFFSET C_9C48
+C_91EE
+	MOV	*R1+,R9
+	BL	@C_00A4	;[bios]putchar(R8:char,R9:pos)?
+	CI	R1,C_9C76	;OFFSET C_9C76
+	JLE	C_91EE
+	;-- --
+	CLR	R0
+	MOV	@C_F046,R10
+	SLA	R10,15
+	JEQ	C_9212
+	MOV	@C_F02C,R0
+	CI	R0,7
+	JL	C_9212
+	LI	R0,4
+C_9212
+	;-- set [f02c~f03f] to $0000 --
+	LI	R1,C_F02C
+C_9216
+	CLR	*R1+
+	CI	R1,X_F040
+	JNE	C_9216
+	;-- set [f004~f02b] to $ffff --
+	LI	R1,C_F004
+C_9222
+	SETO	*R1+
+	CI	R1,C_F02C
+	JNE	C_9222
+	;-- --
+	LI	R8,C_9E36	;OFFSET C_9E36
+	MOV	R8,@C_F03A	;pointer to table C_9E36
+
+	MOV	R0,@C_F02C
+	;-- send to VRAM:1F00? --
+	LI	R8,C_9C78	;OFFSET C_9C78
+	LI	R9,7000h
+	LI	R10,3Ch
+	BL	@C_00A0	;[bios]cpu to vram memcpy(R9:value_dst,R10:size,R8:src)?
+	;-- ladders --
+	LI	R3,C_9C38	;OFFSET C_9C38	;offsets for ladders[left]
+	LI	R8,C_9B9C	;OFFSET C_9B9C	;ladder
+
+	CLR	R9
+C_9250
+	MOVB	*R3+,R2
+	SRL	R2,8
+	A	R2,R9
+	BL	@C_00A4	;[bios]putchar(R8:char,R9:pos)?
+	CI	R3,C_9C40	;OFFSET C_9C40	;offsets for ladders[right]
+	JL	C_9250
+
+	INC	R8
+
+	CLR	R9
+C_9264
+	MOVB	*R3+,R2
+	SRL	R2,8
+	A	R2,R9
+	BL	@C_00A4	;[bios]putchar(R8:char,R9:pos)?
+	CI	R3,X_9C48	;OFFSET X_9C48
+	JL	C_9264
+	;-- --
+	MOV	@C_F046,R7
+	SLA	R7,15
+	JEQ	C_9296
+	LI	R1,C_F030
+	LI	R2,10C0h
+	CLR	R3
+	MOV	R2,*R1+
+	MOV	R3,*R1+
+	LI	R2,10D0h
+	MOV	R2,*R1+
+	MOV	R3,*R1
+
+	CLR	@C_F002	;no more ham
+C_9296
+	;-- --
+	MOV	@C_F04E,R11
+	RT
+;----------------------------------------
+;refresh something/manage game over?
+C_929C
+	MOV	R11,@C_F04A
+	;-- ham? --
+	MOV	@C_F044,R2
+	SLA	R2,13
+	JNE	C_92CA
+
+	MOV	@C_F01C,R1
+	INC	R1
+	JNE	C_92CA
+
+	MOV	@C_F000,R5
+	CI	R5,21h
+	JLE	C_92CA
+
+	LI	R1,C_F01C
+	LI	R2,28E0h
+	MOV	R2,*R1+
+	LI	R3,0806h
+	MOV	R3,*R1+
+C_92CA
+	;-- --
+	BL	@C_95E2	;display score/life/... ?
+	;-- --
+	MOV	@C_F002,R2
+	CI	R2,2
+	JEQ	C_9316
+	MOV	@C_F044,R2
+	JNE	C_9316
+	;-- --
+	INC	@C_F046
+	MOV	@C_F046,R7
+	SLA	R7,2
+	AI	R7,1Eh
+	CI	R7,38h
+	JL	C_92F6
+	LI	R7,38h
+C_92F6
+	MOV	R7,@C_F044
+	BL	@C_90BA	;init level?
+	;-- [get_ready] --
+	LI	R9,C_9F69	;OFFSET C_9F69
+	BL	@C_0068	;[bios]start sound channel 0(R9:addr_data)?
+	;-- --
+	LI	R13,200
+	BL	@C_0188	;[bios]active wait(R13:delay)?
+	;-- [intro] --
+	LI	R9,C_9E61	;OFFSET C_9E61
+	BL	@C_0068	;[bios]start sound channel 0(R9:addr_data)?
+	;-- --
+C_9316
+	MOV	@C_F002,R1
+	CI	R1,2
+	JEQ	C_9326	;player falling
+	;-- --
+	MOV	@C_F04A,R11
+	RT
+	;-- player falling --
+C_9326
+	BL	@C_0134	;[bios]sound_1?
+
+	INCT	@C_F000
+	MOV	@C_F000,R9
+	MOV	R9,R0
+	;-- --
+	AI	R9,0FFF8h
+	SLA	R9,8
+	AI	R9,0D0h
+	BL	@C_01DC	;[bios](R9)->R9?
+	LI	R8,C_9B9A	;OFFSET C_9B9A
+	BL	@C_00A4	;[bios]putchar(R8:char,R9:pos)?
+	INC	R9
+	BL	@C_00A4	;[bios]putchar(R8:char,R9:pos)?
+
+	LI	R8,C_9BA0	;OFFSET C_9BA0
+	LI	R9,7Bh
+	BL	@C_00A4	;[bios]putchar(R8:char,R9:pos)?
+	;-- --
+	MOV	R0,R9
+
+	CI	R0,8Fh
+	JHE	C_936E
+	SLA	R9,8
+	AI	R9,0D0h
+	B	@C_838C
+C_936E
+	;-- reached bottom --
+	BL	@C_0130	;[bios]sound_0?
+
+	LI	R13,200
+	BL	@C_0188	;[bios]active wait(R13:delay)?
+
+	CLR	@C_F002	;no more ham
+	;-- [get_ready] --
+	LI	R9,C_9F69	;OFFSET C_9F69
+	BL	@C_0068	;[bios]start sound channel 0(R9:addr_data)?
+	;-- --
+	BL	@C_01B4	;[bios]get player count->R12?
+	MOV	R12,R1
+	SLA	R12,7
+	SRL	R12,15
+	JNE	C_93B6
+	;-- 1 Player --
+	DEC	@C_F042	;lose one life
+	JEQ	C_944C	;game over
+
+	LI	R13,200
+	BL	@C_0188	;[bios]active wait(R13:delay)?
+
+	BL	@C_90BA	;init level?
+	BL	@C_95E2	;display score/life/... ?
+	;-- --
+	LI	R8,C_9C04	;'1'	;OFFSET C_9C04
+	BL	@C_955E	;put text "PLAYER-"(R8:char)?
+
+	BL	@C_95A8	;delay+erase status text?
+	;-- --
+	JMP	C_9440
+C_93B6	;-- 2 Players --
+	SRL	R1,15
+	JNE	C_948A
+	;-- PLAYER 1 --
+	DEC	@C_F042	;lose one life
+	JEQ	C_9406	;Game Over:Player 1
+	;-- --
+	BL	@C_9520	;switch context 1P->2P?
+
+	MOV	@C_F042,R1
+	JEQ	C_93EC
+	;
+	BL	@C_01B4	;[bios]get player count->R12?
+	ORI	R12,8000h
+	BL	@C_01B8	;[bios]set player count(R12:#)?
+	BL	@C_90BA	;init level?
+	BL	@C_95E2	;display score/life/... ?
+	;-- --
+	LI	R8,C_9C06	;'2'	;OFFSET C_9C06
+	BL	@C_955E	;put text "PLAYER-"(R8:char)?
+
+	BL	@C_95A8	;delay+erase status text?
+	;-- --
+	JMP	C_9440
+C_93EC
+	;-- --
+	BL	@C_9512	;switch context 2P->1P?
+	BL	@C_90BA	;init level?
+	BL	@C_95E2	;display score/life/... ?
+	;-- --
+	LI	R8,C_9C04	;'1'	;OFFSET C_9C04
+	BL	@C_955E	;put text "PLAYER-"(R8:char)?
+
+	BL	@C_95A8	;delay+erase status text?
+	;-- --
+	JMP	C_9440
+C_9406
+	;-- Game Over:Player 1 --
+	LI	R8,C_9C04	;'1'	;OFFSET C_9C04
+	BL	@C_955E	;put text "PLAYER-"(R8:char)?
+	BL	@C_9586	;put text "GAME OVER"?
+
+	BL	@C_95A8	;delay+erase status text?
+	;-- --
+	BL	@C_9520	;switch context 1P->2P?
+
+	MOV	@C_F042,R1
+	JEQ	C_944C	;game over
+	BL	@C_90BA	;init level?
+	BL	@C_01B4	;[bios]get player count->R12?
+	ORI	R12,8000h
+	BL	@C_01B8	;[bios]set player count(R12:#)?
+	;
+	BL	@C_95E2	;display score/life/... ?
+	;-- --
+	LI	R8,C_9C06	;'2'	;OFFSET C_9C06
+	BL	@C_955E	;put text "PLAYER-"(R8:char)?
+
+	BL	@C_95A8	;delay+erase status text?
+;----
+C_9440
+	;-- [intro] --
+	LI	R9,C_9E61	;OFFSET C_9E61
+	BL	@C_0068	;[bios]start sound channel 0(R9:addr_data)?
+	;-- --
+	B	@C_9316
+;----
+;game over
+C_944C
+	BL	@C_9586	;put text "GAME OVER"?
+
+	LI	R13,200
+	BL	@C_0188	;[bios]active wait(R13:delay)?
+	;-- --
+	LI	R8,C_9C12	;'RT-KEY  '	;OFFSET C_9C12
+	LI	R9,1ABh
+	LI	R1,8
+C_9464
+	BL	@C_00A4	;[bios]putchar(R8:char,R9:pos)?
+	INC	R8
+	INC	R9
+	DEC	R1
+	JNE	C_9464
+	;-- --
+	LI	R5,0800h
+C_9474
+	BL	@C_0220	;[bios]is keypressed('ENTER')?
+	JMP	C_947E
+	DEC	R5
+	JNE	C_9474
+C_947E
+	LI	R12,2
+	BL	@C_01F8	;[bios]clear decimal workspace(R12)?
+
+	B	@C_8002	;reset
+;----
+C_948A
+	;-- PLAYER 2 --
+	DEC	@C_F042	;lose one life
+	JEQ	C_94D6	;Game Over:Player 2
+	;-- --
+	BL	@C_9512	;switch context 2P->1P?
+
+	MOV	@C_F042,R1
+	JEQ	C_94BC
+	;
+	BL	@C_01B4	;[bios]get player count->R12?
+	ANDI	R12,7FFFh
+	BL	@C_01B8	;[bios]set player count(R12:#)?
+	BL	@C_90BA	;init level?
+	BL	@C_95E2	;display score/life/... ?
+	;-- --
+	LI	R8,C_9C04	;'1'	;OFFSET C_9C04
+	BL	@C_955E	;put text "PLAYER-"(R8:char)?
+
+	BL	@C_95A8	;delay+erase status text?
+	;-- --
+	JMP	C_9440
+C_94BC
+	;-- --
+	BL	@C_9520	;switch context 1P->2P?
+	BL	@C_90BA	;init level?
+	BL	@C_95E2	;display score/life/... ?
+	;-- --
+	LI	R8,C_9C06	;'2'	;OFFSET C_9C06
+	BL	@C_955E	;put text "PLAYER-"(R8:char)?
+
+	BL	@C_95A8	;delay+erase status text?
+	;-- --
+	JMP	C_9440
+C_94D6
+	;-- Game Over:Player 2 --
+	LI	R8,C_9C06	;'2'	;OFFSET C_9C06
+	BL	@C_955E	;put text "PLAYER-"(R8:char)?
+	BL	@C_9586	;put text "GAME OVER"?
+
+	BL	@C_95A8	;delay+erase status text?
+	;-- --
+	BL	@C_9512	;switch context 2P->1P?
+
+	MOV	@C_F042,R1
+	JEQ	C_944C	;game over
+	BL	@C_90BA	;init level?
+	BL	@C_01B4	;[bios]get player count->R12?
+	ANDI	R12,7FFFh
+	BL	@C_01B8	;[bios]set player count(R12:#)?
+	;
+	BL	@C_95E2	;display score/life/... ?
+	;-- --
+	LI	R8,C_9C04	;'1'	;OFFSET C_9C04
+	BL	@C_955E	;put text "PLAYER-"(R8:char)?
+
+	BL	@C_95A8	;delay+erase status text?
+	;-- --
+	JMP	C_9440
+;----------------------------------------
+;switch context 2P->1P?
+;($f02c~$f047 to VRAM:3C00,from VRAM:3D00)?
+C_9512	MOV	R11,@C_F04E
+	;-- --
+	LI	R9,9500h
+	LI	R5,9400h
+
+	JMP	C_952C
+;----
+;switch context 1P->2P?
+;($f02c~$f047 to VRAM:3D00,from VRAM:3C00)?
+C_9520	MOV	R11,@C_F04E
+	;-- --
+	LI	R9,9400h
+	LI	R5,9500h
+;----
+C_952C
+	BL	@C_007C	;[bios]VDP:make vram address(R9:value)->R9?
+	LI	R1,C_F02C
+C_9534
+	MOV	*R1+,R8
+	BL	@C_0178	;[bios]VDP:write one word(R9:vaddr,R8:val)?
+	CI	R1,X_F048
+	JNE	C_9534
+
+	MOV	R5,R9
+
+	BL	@C_007C	;[bios]VDP:make vram address(R9:value)->R9?
+	LI	R1,C_F02C
+	MOV	R9,R7
+C_954C
+	BL	@C_017C	;[bios]VDP:read one word(R9:vaddr)->R8(R7+=2)?
+	MOV	R8,*R1+
+	CI	R1,X_F048
+	JNE	C_954C
+	;-- --
+	MOV	@C_F04E,R11
+	RT
+;----------------------------------------
+;put text "PLAYER-"(R8:char)?
+C_955E	MOV	R11,@C_F04E
+	;-- --
+	LI	R9,172h
+	BL	@C_00A4	;[bios]putchar(R8:char,R9:pos)?
+
+	LI	R8,C_9C1A	;'-REYALP '	;OFFSET C_9C1A
+	DEC	R9
+	LI	R1,8
+C_9574
+	BL	@C_00A4	;[bios]putchar(R8:char,R9:pos)?
+	DEC	R9
+	INC	R8
+	DEC	R1
+	JNE	C_9574
+	;-- --
+	MOV	@C_F04E,R11
+	RT
+;----------------------------------------
+;put text "GAME OVER"?
+C_9586	MOV	R11,@C_F04E
+	;-- --
+	LI	R8,C_9C08	;'GAME OVER'	;OFFSET C_9C08
+	LI	R9,18Ah
+	LI	R1,9
+C_9596
+	BL	@C_00A4	;[bios]putchar(R8:char,R9:pos)?
+	INC	R9
+	INC	R8
+	DEC	R1
+	JNE	C_9596
+	;-- --
+	MOV	@C_F04E,R11
+	RT
+;----------------------------------------
+;delay+erase status text?
+C_95A8	MOV	R11,@C_F04E
+	;-- --
+	LI	R13,200
+	BL	@C_0188	;[bios]active wait(R13:delay)?
+	;-- --
+	LI	R8,C_9B9A	;OFFSET C_9B9A
+
+	LI	R9,163h
+	LI	R4,14h
+C_95C0
+	BL	@C_00A4	;[bios]putchar(R8:char,R9:pos)?
+	INC	R9
+	DEC	R4
+	JNE	C_95C0
+
+	LI	R9,183h
+	LI	R4,14h
+C_95D2
+	BL	@C_00A4	;[bios]putchar(R8:char,R9:pos)?
+	INC	R9
+	DEC	R4
+	JNE	C_95D2
+	;-- --
+	MOV	@C_F04E,R11
+	RT
+;----------------------------------------
+;display score/life/... ?
+C_95E2	MOV	R11,@C_F04E
+	;-- --
+	LI	R9,9000h
+	BL	@C_007C	;[bios]VDP:make vram address(R9:value)->R9?
+	MOV	R9,R4
+	LI	R1,C_F02C
+C_95F4
+	MOV	*R1+,R8
+	BL	@C_0178	;[bios]VDP:write one word(R9:vaddr,R8:val)?
+	CI	R1,X_F034
+	JNE	C_95F4
+	;-- display enemy count and current level? --
+	LI	R7,0C000h
+
+	MOV	@C_F044,R8
+	LI	R9,C_F02C
+	BL	@C_00F8	;[bios]convert to decimal(R8:val)->@R9?
+	MOV	R9,R8
+	AI	R8,0003h
+	MOVB	*R8,R9
+	A	R7,R9
+	MOVB	R9,*R8
+	LI	R9,42h
+	BL	@C_00A4	;[bios]putchar(R8:char,R9:pos)?
+	INC	R8
+	MOVB	*R8,R10
+	A	R7,R10
+	MOVB	R10,*R8
+	INC	R9
+	BL	@C_00A4	;[bios]putchar(R8:char,R9:pos)?
+
+	MOV	@C_F046,R8
+	INC	R8
+	LI	R9,C_F02C
+	BL	@C_00F8	;[bios]convert to decimal(R8:val)->@R9?
+	MOV	R9,R8
+	AI	R8,0004h
+	MOVB	*R8,R9
+	A	R7,R9
+	MOVB	R9,*R8
+	LI	R9,5Dh
+	BL	@C_00A4	;[bios]putchar(R8:char,R9:pos)?
+	;-- --
+	LI	R1,C_F02C
+	MOV	R4,R7
+C_965A
+	BL	@C_017C	;[bios]VDP:read one word(R9:vaddr)->R8(R7+=2)?
+	MOV	R8,*R1+
+	CI	R1,X_F034
+	JNE	C_965A
+	;-- remaining lives --
+	LI	R0,4
+	MOV	@C_F042,R4
+	LI	R9,1Bh
+	DEC	R4
+	JNE	C_967C
+	LI	R4,4
+	JMP	C_968C
+C_967C
+	LI	R8,C_9C22	;OFFSET C_9C22	;life
+	C	R4,R0
+	JH	C_969A
+C_9684
+	BL	@C_96AC	;fillchar(R9:pos,R8:char,R4:count)?
+	S	R4,R0
+	MOV	R0,R4
+C_968C
+	LI	R8,C_9B9A	;OFFSET C_9B9A
+	BL	@C_96AC	;fillchar(R9:pos,R8:char,R4:count)?
+	;-- --
+	MOV	@C_F04E,R11
+	RT
+C_969A	;-- --
+	MOV	R4,R5
+	MOV	R0,R4
+	BL	@C_96AC	;fillchar(R9:pos,R8:char,R4:count)?
+
+	LI	R9,003Ah
+	S	R0,R5
+	MOV	R5,R4
+	JMP	C_9684
+;----
+;fillchar(R9:pos,R8:char,R4:count)?
+C_96AC	MOV	R11,@C_F04C
+	;-- --
+C_96B0
+	BL	@C_00A4	;[bios]putchar(R8:char,R9:pos)?
+	INC	R9
+	DEC	R4
+	JNE	C_96B0
+	;-- --
+	MOV	@C_F04C,R11
+	RT
+;----------------------------------------
+;score update + check extra life(R10)?
+C_96C0	MOV	R11,@C_F04E
+	;-- --
+	BL	@C_01B4	;[bios]get player count->R12?
+	SRL	R12,15
+	JEQ	C_96D2
+	;-- put score 2 --
+	LI	R9,2033h
+	JMP	C_96D6
+C_96D2	;-- put score 1 --
+	LI	R9,1023h
+C_96D6
+	BL	@C_00DC	;[bios]update score(R9:mask,R10:val)
+
+	SRL	R9,12
+	MOV	R9,R10
+	BL	@C_01F4	;[bios]get score(R10)->R12/R13?
+
+	MOV	@C_F040,R5
+	CB	R13,@C_9E56(R5)
+	JL	C_96F4
+	INC	@C_F040
+	INC	@C_F042	;extra life
+C_96F4	;-- --
+	MOV	@C_F04E,R11
+	RT
+;----------------------------------------
+C_96FA	BYTE 0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh	;[70]
+	BYTE 0ffh,0feh,0feh,0fch,0fch,0f8h,0e0h,0c0h	;[71]
+	BYTE 0ffh,07fh,07fh,03fh,03fh,01fh,007h,001h	;[72]
+	BYTE 0ffh,0ffh,0ffh,0ffh,0ffh,0e7h,0c3h,081h	;[73]
+	BYTE 0fah,0fah,0fah,0fah,0fah,0fah,0fah,0fah	;[74]
+	BYTE 0aah,0aah,0aah,0aah,0aah,0aah,0aah,0aah	;[75]
+	BYTE 000h,0dfh,0dfh,0dfh,000h,0fbh,0fbh,0fbh	;[76]
+	BYTE 0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh	;[77]
+;__973A
+;IF HACKED
+;;(c)T.M.
+;	BYTE 000h,03ch,046h,09Fh,0BFh,09Fh,046h,03Ch	;[78]
+;	BYTE 000h,07Fh,008h,008h,008h,008h,008h,008h	;[79]
+;	BYTE 000h,000h,000h,000h,000h,000h,018h,018h	;[7a]
+;	BYTE 000h,082h,0C6h,0AAh,092h,082h,082h,082h	;[7b]
+;	BYTE 000h,000h,000h,000h,000h,000h,030h,030h	;[7c]
+;	BYTE 000h,000h,000h,000h,000h,000h,000h,000h	;[7d]
+;ELSE
+;(c)Konami
+	BYTE 000h,03ch,044h,09dh,0bch,09dh,044h,03ch	;[78]
+	BYTE 000h,044h,048h,051h,061h,051h,048h,044h	;[79]
+	BYTE 000h,044h,056h,017h,015h,014h,0a4h,044h	;[7a]
+	BYTE 000h,044h,04ah,051h,0d1h,0dfh,051h,051h	;[7b]
+	BYTE 000h,044h,06ch,054h,044h,044h,044h,044h	;[7c]
+	BYTE 000h,0e0h,040h,040h,040h,040h,040h,0e0h	;[7d]
+;ENDI
+;__976A
+
+	;life
+	;[$7e]
+	;[00]........
+	;[06].....xx.
+	;[3a]..xxx.x.
+	;[5c].x.xxx..
+	;[fe]xxxxxxx.
+	;[fe]xxxxxxx.
+	;[7c].xxxxx..
+	;[38]..xxx...
+	BYTE 000h,006h,03ah,05ch,0feh,0feh,07ch,038h	;[7e]
+
+
+	;[$7f]
+	;[ff]xxxxxxxx
+	;[f9]xxxxx..x
+	;[f9]xxxxx..x
+	;[f9]xxxxx..x
+	;[f3]xxxx..xx
+	;[f3]xxxx..xx
+	;[87]x....xxx
+	;[87]x....xxx
+	BYTE 0ffh,0f9h,0f9h,0f9h,0f3h,0f3h,087h,087h	;[7f]
+
+	;[$80]
+	;[ff]xxxxxxxx
+	;[ff]xxxxxxxx
+	;[db]xx.xx.xx
+	;[e7]xxx..xxx
+	;[bf]x.xxxxxx
+	;[bf]x.xxxxxx
+	;[db]xx.xx.xx
+	;[e7]xxx..xxx
+	BYTE 0ffh,0ffh,0dbh,0e7h,0bfh,0bfh,0dbh,0e7h	;[80]
+
+	BYTE 000h,003h,007h,00bh,01fh,01fh,01fh,007h	;[81]
+	BYTE 040h,0c0h,0e0h,0f0h,0f0h,0f0h,0e0h,0c0h	;[82]
+	BYTE 003h,007h,00fh,0ech,01fh,00fh,002h,002h	;[83]
+	BYTE 080h,0c0h,0e0h,01fh,0e0h,0c0h,080h,080h	;[84]
+	BYTE 003h,003h,0c3h,0ffh,033h,01bh,01fh,00fh	;[85]
+
+
+	;[$86]
+	;[1f]...xxxxx
+	;[3c]..xxxx..
+	;[5a].x.xx.x.
+	;[e7]xxx..xxx
+	;[e7]xxx..xxx
+	;[da]xx.xx.x.
+	;[bc]x.xxxx..
+	;[98]x..xx...
+	BYTE 01fh,03ch,05ah,0e7h,0e7h,0dah,0bch,098h	;[86]
+	
+	;ladder
+	;[$87,$88]
+	;[30,0c]..xx........xx..
+	;[3f,fc]..xxxxxxxxxxxx..
+	;[30,0c]..xx........xx..
+	;[30,0c]..xx........xx..
+	;[30,0c]..xx........xx..
+	;[3f,fc]..xxxxxxxxxxxx..
+	;[30,0c]..xx........xx..
+	;[30,0c]..xx........xx..
+	BYTE 030h,03fh,030h,030h,030h,03fh,030h,030h	;[87]
+	BYTE 00ch,0fch,00ch,00ch,00ch,0fch,00ch,00ch	;[88]
+
+	BYTE 003h,003h,003h,003h,003h,003h,003h,003h	;[89]
+	BYTE 0c0h,0c0h,0c0h,0c0h,0c0h,0c0h,0c0h,0c0h	;[8a]
+	BYTE 000h,000h,000h,0ffh,000h,000h,000h,000h	;[8b]
+	BYTE 080h,080h,080h,080h,080h,080h,080h,080h	;[8c]
+	BYTE 004h,00ch,00eh,01fh,01fh,01fh,03fh,03fh	;[8d]
+	BYTE 020h,032h,073h,0f9h,0f9h,0f9h,0fdh,0fdh	;[8e]
+	BYTE 004h,00ch,04eh,0dfh,09fh,09fh,0bfh,0bfh	;[8f]
+	BYTE 09fh,087h,0ffh,00fh,03fh,020h,061h,006h	;[90]
+	BYTE 020h,030h,070h,0f8h,0f8h,0f8h,0fch,0fch	;[91]
+	BYTE 0f8h,0e2h,0fbh,0fah,0eeh,0a0h,010h,018h	;[92]
+	BYTE 000h,000h,00bh,0c7h,0fch,0ach,007h,0afh	;[93]
+	BYTE 0ffh,073h,00fh,007h,003h,007h,00ch,03bh	;[94]
+	BYTE 080h,0c0h,0e0h,0e0h,070h,0f0h,0f8h,0fah	;[95]
+	BYTE 0f3h,0e2h,0feh,0f0h,0e0h,0f0h,09ch,00eh	;[96]
+	BYTE 0e0h,0f0h,0fbh,01fh,00ch,004h,007h,017h	;[97]
+	BYTE 0ddh,0f8h,040h,000h,000h,001h,000h,000h	;[98]
+	BYTE 080h,0c0h,0e0h,0e0h,070h,0f4h,0e6h,0c4h	;[99]
+	BYTE 0fch,0f1h,0fdh,0fbh,0b8h,0a4h,092h,071h	;[9a]
+
+;pushing wolf #1
+;[$9b|$9d]
+;[$9c|$9e]
+;[08,38]....x.....xxx...
+;[18,78]...xx....xxxx...
+;[3e,f8]..xxxxx.xxxxx...
+;[3f,c0]..xxxxxxxx......
+;[63,38].xx...xx..xxx...
+;[73,e0].xxx..xxxxx.....
+;[ff,83]xxxxxxxxx.....xx
+;[ff,ff]xxxxxxxxxxxxxxxx
+;[7f,c0].xxxxxxxxx......
+;[3f,c0]..xxxxxxxx......
+;[3f,00]..xxxxxx........
+;[7e,00].xxxxxx.........
+;[5c,00].x.xxx..........
+;[8c,00]x...xx..........
+;[1c,00]...xxx..........
+;[1e,00]...xxxx.........
+	BYTE 008h,018h,03eh,03fh,063h,073h,0ffh,0ffh	;[9b]
+	BYTE 07fh,03fh,03fh,07eh,05ch,08ch,01ch,01eh	;[9c]
+	BYTE 038h,078h,0f8h,0c0h,038h,0e0h,083h,0ffh	;[9d]
+	BYTE 0c0h,0c0h,000h,000h,000h,000h,000h,000h	;[9e]
+
+;pushing wolf #2
+;[$9f|$a2]
+;[$a1|$a3]
+;[01h,07].......x.....xxx
+;[03h,0f]......xx....xxxx
+;[07h,df].....xxxxx.xxxxx
+;[07h,f8].....xxxxxxxx...
+;[0eh,27]....xxx...x..xxx
+;[0fh,3c]....xxxx..xxxx..
+;[1fh,f0]...xxxxxxxxx....
+;[1fh,ff]...xxxxxxxxxxxxx
+;[0fh,f0]....xxxxxxxx....
+;[07h,f0].....xxxxxxx....
+;[07h,c0].....xxxxx......
+;[3fh,80]..xxxxxxx.......
+;[47h,00].x...xxx........
+;[4eh,00].x..xxx.........
+;[1ch,00]...xxx..........
+;[1eh,00]...xxxx.........
+	BYTE 001h,003h,007h,007h,00eh,00fh,01fh,01fh	;[9f]
+	;(other patterns shared)
+
+;pushing wolf #3
+;[$a0|$a2]
+;[$a1|$a3]
+;[01h,01].......x.....xxx
+;[03h,03]......xx....xxxx
+;[07h,07].....xxxxx.xxxxx
+;[07h,07].....xxxxxxxx...
+;[0eh,0e]....xxx...x..xxx
+;[0fh,0f]....xxxx..xxxx..
+;[1fh,7f].xxxxxxxxxxx....
+;[1fh,ff]xxxxxxxxxxxxxxxx
+;[0fh,f0]....xxxxxxxx....
+;[07h,f0].....xxxxxxx....
+;[07h,c0].....xxxxx......
+;[3fh,80]..xxxxxxx.......
+;[47h,00].x...xxx........
+;[4eh,00].x..xxx.........
+;[1ch,00]...xxx..........
+;[1eh,00]...xxxx.........
+	BYTE 001h,003h,007h,007h,00eh,00fh,07fh,0ffh	;[a0]
+	BYTE 00fh,007h,007h,03fh,047h,04eh,01ch,01eh	;[a1]
+	BYTE 007h,00fh,0dfh,0f8h,027h,03ch,0f0h,0ffh	;[a2]
+	BYTE 0f0h,0f0h,0c0h,080h,000h,000h,000h,000h	;[a3]
+
+;----
+;(bg/sprite shared patterns)
+C_989A
+;----
+
+;boulder
+;[$a4|$a6|$a8|$aa]
+;[$a5|$a7|$a8|$ab]
+;[00,63,1c,30].........xx...xx...xxx....xx....
+;[01,df,7e,f0].......xxx.xxxxx.xxxxxx.xxxx....
+;[0b,ef,bf,78]....x.xxxxx.xxxxx.xxxxxx.xxxx...
+;[1d,f7,df,b8]...xxx.xxxxx.xxxxx.xxxxxx.xxx...
+;[1e,f7,af,dc]...xxxx.xxxx.xxxx.x.xxxxxx.xxx..
+;[3f,6f,f7,be]..xxxxxx.xx.xxxxxxxx.xxxx.xxxxx.
+;[3b,7f,ff,7f]..xxx.xx.xxxxxxxxxxxxxxx.xxxxxxx
+;[7b,77,7f,fe].xxxx.xx.xxx.xxx.xxxxxxxxxxxxxx.
+;[f7,fb,bf,fc]xxxx.xxxxxxxx.xxx.xxxxxxxxxxxx..
+;[ef,fb,bd,fe]xxx.xxxxxxxxx.xxx.xxxx.xxxxxxxx.
+;[6f,e7,db,9e].xx.xxxxxxx..xxxxx.xx.xxx.xxxxx.
+;[73,ff,e7,ef].xxx..xxxxxxxxxxxxx..xxxxxx.xxxx
+;[3d,ff,fd,df]..xxxx.xxxxxxxxxxxxxxx.xxx.xxxxx
+;[7f,df,de,be].xxxxxxxxx.xxxxxxx.xxxx.x.xxxxx.
+;[3f,be,bf,7c]..xxxxxxx.xxxxx.x.xxxxxx.xxxxx..
+;[1c,78,78,f8]...xxx...xxxx....xxxx...xxxxx...
+	BYTE 000h,001h,00bh,01dh,01eh,03fh,03bh,07bh	;[a4][spr:00]
+	BYTE 0f7h,0efh,06fh,073h,03dh,07fh,03fh,01ch	;[a5][spr:01]
+	BYTE 063h,0dfh,0efh,0f7h,0f7h,06fh,07fh,077h	;[a6][spr:02]
+	BYTE 0fbh,0fbh,0e7h,0ffh,0ffh,0dfh,0beh,078h	;[a7][spr:03]
+	BYTE 01ch,07eh,0bfh,0dfh,0afh,0f7h,0ffh,07fh	;[a8][spr:04]
+	BYTE 0bfh,0bdh,0dbh,0e7h,0fdh,0deh,0bfh,078h	;[a9][spr:05]
+	BYTE 030h,0f0h,078h,0b8h,0dch,0beh,07fh,0feh	;[aa][spr:06]
+	BYTE 0fch,0feh,09eh,0efh,0dfh,0beh,07ch,0f8h	;[ab][spr:07]
+
+;----
+;__98DA(end of bg patterns)
+;----
+
+;ham
+;[$08|$0a]
+;[$09|$0b]
+;[0e,70]....xxx..xxx....
+;[1b,d8]...xx.xxxx.xx...
+;[9f,f9]x..xxxxxxxxxx..x
+;[ef,f7]xxx.xxxxxxxx.xxx
+;[ed,b7]xxx.xx.xx.xx.xxx
+;[9f,f9]x..xxxxxxxxxx..x
+;[1b,e8]...xx.xxxxx.x...
+;[0e,70]....xxx..xxx....
+;[00,00]................
+;[00,00]................
+;[00,00]................
+;[00,00]................
+;[00,00]................
+;[00,00]................
+;[00,00]................
+;[00,00]................
+	BYTE 00eh,01bh,09fh,0efh,0edh,09fh,01bh,00eh	;[spr:08]
+	BYTE 000h,000h,000h,000h,000h,000h,000h,000h	;[spr:09]
+	BYTE 070h,0d8h,0f9h,0f7h,0b7h,0f9h,0e8h,070h	;[spr:0a]
+	BYTE 000h,000h,000h,000h,000h,000h,000h,000h	;[spr:0b]
+
+;ball
+;[$0c|$0e]
+;[$0d|$0f]
+;[3c,00]..xxxx..........
+;[7e,00].xxxxxx.........
+;[f7,00]xxxx.xxx........
+;[bb,00]x.xxx.xx........
+;[bf,00]x.xxxxxx........
+;[df,00]xx.xxxxx........
+;[66,00].xx..xx.........
+;[3c,00]..xxxxx.........
+;[00,00]................
+;[00,00]................
+;[00,00]................
+;[00,00]................
+;[00,00]................
+;[00,00]................
+;[00,00]................
+;[00,00]................
+	BYTE 03ch,07eh,0f7h,0bbh,0bfh,0dfh,066h,03ch	;[spr:0c]
+	BYTE 000h,000h,000h,000h,000h,000h,000h,000h	;[spr:0d]
+	BYTE 000h,000h,000h,000h,000h,000h,000h,000h	;[spr:0e]
+	BYTE 000h,000h,000h,000h,000h,000h,000h,000h	;[spr:0f]
+
+;[$10|$12]
+;[$11|$13]
+;[10,21]...x......x....x
+;[30,61]..xx.....xx....x
+;[38,e1]..xxx...xxx....x
+;[7f,f1].xxxxxxxxxxx...x
+;[63,11].xx...xx...x...x
+;[73,31].xxx..xx..xx...x
+;[ff,f9]xxxxxxxxxxxxx..x
+;[fc,f9]xxxxxx..xxxxx..x
+;[77,b1].xxx.xxxx.xx...x
+;[38,61]..xxx....xx....x
+;[ff,ff]xxxxxxxxxxxxxxxx
+;[df,c1]xx.xxxxxxx.....x
+;[0f,99]....xxxxx..xx..x
+;[7f,f9].xxxxxxxxxxxx..x
+;[61,19].xx....x...xx..x
+;[f6,00]xxxx.xx.........
+	BYTE 010h,030h,038h,07fh,063h,073h,0ffh,0fch	;[spr:10]
+	BYTE 077h,038h,0ffh,0dfh,00fh,07fh,061h,0f6h	;[spr:11]
+	BYTE 021h,061h,0e1h,0f1h,011h,031h,0f9h,0f9h	;[spr:12]
+	BYTE 0b1h,061h,0ffh,0c1h,099h,0f9h,019h,000h	;[spr:13]
+
+;[$14|$16]
+;[$15|$17]
+;[10,21]...x......x....x
+;[30,61]..xx.....xx....x
+;[38,e1]..xxx...xxx....x
+;[7f,f1].xxxxxxxxxxx...x
+;[63,11].xx...xx...x...x
+;[73,31].xxx..xx..xx...x
+;[ff,f9]xxxxxxxxxxxxx..x
+;[fc,f9]xxxxxx..xxxxx..x
+;[77,b1].xxx.xxxx.xx...x
+;[38,61]..xxx....xx....x
+;[ff,ff]xxxxxxxxxxxxxxxx
+;[df,c1]xx.xxxxxxx.....x
+;[cf,81]xx..xxxxx......x
+;[ef,f1]xxx.xxxxxxxx...x
+;[c4,31]xx...x....xx...x
+;[03,78]......xx.xxxx...
+	BYTE 010h,030h,038h,07fh,063h,073h,0ffh,0fch	;[spr:14]
+	BYTE 077h,038h,0ffh,0dfh,0cfh,0efh,0c4h,003h	;[spr:15]
+	BYTE 021h,061h,0e1h,0f1h,011h,031h,0f9h,0f9h	;[spr:16]
+	BYTE 0b1h,061h,0ffh,0c1h,081h,0f1h,031h,078h	;[spr:17]
+
+;[$18|$1a]
+;[$19|$1b]
+;[00,01]...............x
+;[00,01]...............x
+;[00,01]...............x
+;[00,01]...............x
+;[10,21]...x......x....x
+;[30,61]..xx.....xx....x
+;[3c,e1]..xxxx..xxx....x
+;[73,91].xxx..xxx..x...x
+;[63,11].xx...xx...x...x
+;[ff,f1]xxxxxxxxxxxx...x
+;[fc,f1]xxxxxx..xxxx...x
+;[77,a1].xxx.xxxx.x....x
+;[b8,7f]x.xxx....xxxxxxx
+;[ff,c1]xxxxxxxxxx.....x
+;[1f,99]...xxxxxx..xx..x
+;[ff,f8]xxxxxxxxxxxxx...
+	BYTE 000h,000h,000h,000h,010h,030h,03ch,073h	;[spr:18]
+	BYTE 063h,0ffh,0fch,077h,0b8h,0ffh,01fh,0ffh	;[spr:19]
+	BYTE 001h,001h,001h,001h,021h,061h,0e1h,091h	;[spr:1a]
+	BYTE 011h,0f1h,0f1h,0a1h,07fh,0c1h,099h,0f8h	;[spr:1b]
+
+;[$1c|$1e]
+;[$1d|$1f]
+;[01,07].......x.....xxx
+;[03,0f]......xx....xxxx
+;[07,df].....xxxxx.xxxxx
+;[07,f8].....xxxxxxxx...
+;[0e,30]....xxx...xx....
+;[0f,20]....xxxx..x.....
+;[1f,e0]...xxxxxxxx.....
+;[1f,e8]...xxxxxxxx.x...
+;[0f,fb]....xxxxxxxxx.xx
+;[c7,ff]xx...xxxxxxxxxxx
+;[ff,f2]xxxxxxxxxxxx..x.
+;[0f,e0]....xxxxxxx.....
+;[07,e0].....xxxxxx.....
+;[1f,c0]...xxxxxxx......
+;[18,c0]...xx...xx......
+;[18,e0]...xx...xxx.....
+	BYTE 001h,003h,007h,007h,00eh,00fh,01fh,01fh	;[spr:1c]
+	BYTE 00fh,0c7h,0ffh,00fh,007h,01fh,018h,018h	;[spr:1d]
+	BYTE 007h,00fh,0dfh,0f8h,030h,020h,0e0h,0e8h	;[spr:1e]
+	BYTE 0fbh,0ffh,0f2h,0e0h,0e0h,0c0h,0c0h,0e0h	;[spr:1f]
+
+;[$20|$22]
+;[$21|$23]
+;[00,6f].........xx.xxxx
+;[18,86]...xx...x....xx.
+;[1f,f7]...xxxxxxxxx.xxx
+;[19,f0]...xx..xxxxx....
+;[13,fb]...x..xxxxxxx.xx
+;[ff,6f]xxxxxxxx.xx.xxxx
+;[c6,1c]xx...xx....xxx..
+;[0d,ee]....xx.xxxx.xxx.
+;[1f,3f]...xxxxx..xxxxxx
+;[1f,e7]...xxxxxxxx..xxx
+;[03,c2]......xxxx....x.
+;[0f,e6]....xxxxxxx..xx.
+;[0f,fe]....xxxxxxxxxxx.
+;[07,1c].....xxx...xxx..
+;[06,0c].....xx.....xx..
+;[04,08].....x......x...
+	BYTE 000h,018h,01fh,019h,013h,0ffh,0c6h,00dh	;[spr:20]
+	BYTE 01fh,01fh,003h,00fh,00fh,007h,006h,004h	;[spr:21]
+	BYTE 06fh,086h,0f7h,0f0h,0fbh,06fh,01ch,0eeh	;[spr:22]
+	BYTE 03fh,0e7h,0c2h,0e6h,0feh,01ch,00ch,008h	;[spr:23]
+
+;[$24|$26]
+;[$25|$27]
+;[f6,00]xxxx.xx.........
+;[61,18].xx....x...xx...
+;[7f,f8].xxxxxxxxxxxx...
+;[0f,98]....xxxxx..xx...
+;[df,c0]xx.xxxxxxx......
+;[fc,ff]xxxxxx..xxxxxxxx
+;[38,63]..xxx....xx...xx
+;[77,b0].xxx.xxxx.xx....
+;[fc,f8]xxxxxx..xxxxx...
+;[e7,f8]xxx..xxxxxxxx...
+;[43,30].x....xx..xx....
+;[67,f0].xx..xxxxxxx....
+;[7f,f0].xxxxxxxxxxx....
+;[38,e0]..xxx...xxx.....
+;[30,60]..xx.....xx.....
+;[10,20]..x.......x.....
+	BYTE 0f6h,061h,07fh,00fh,0dfh,0fch,038h,077h	;[spr:24]
+	BYTE 0fch,0e7h,043h,067h,07fh,038h,030h,010h	;[spr:25]
+	BYTE 000h,018h,0f8h,098h,0c0h,0ffh,063h,0b0h	;[spr:26]
+	BYTE 0f8h,0f8h,030h,0f0h,0f0h,0e0h,060h,020h	;[spr:27]
+
+;----
+;(x-flip sprites patterns)
+C_99DA
+;----
+
+;[$28|$2a]
+;[$29|$2b]
+;[02,00]......x.........
+;[06,00].....xx.........
+;[0f,80]....xxxxx.......
+;[0f,c6]....xxxxxx...xx.
+;[1c,77]...xxx...xxx.xxx
+;[1e,6a]...xxxx..xx.x.x.
+;[3f,c0]..xxxxxxxx......
+;[3f,ea]..xxxxxxxxx.x.x.
+;[1f,fe]...xxxxxxxxxxxx.
+;[0f,dc]....xxxxxx.xxx..
+;[1f,e0]...xxxxxxxx.....
+;[3f,e0]..xxxxxxxxx.....
+;[3f,c0]..xxxxxxxx......
+;[0f,e0]....xxxxxxx.....
+;[18,60]...xx....xx.....
+;[1c,70]...xxx...xxx....
+	BYTE 002h,006h,00fh,00fh,01ch,01eh,03fh,03fh	;[spr:28][flipx:3c]
+	BYTE 01fh,00fh,01fh,03fh,03fh,00fh,018h,01ch	;[spr:29][flipx:3d]
+	BYTE 000h,000h,080h,0c6h,077h,06ah,0c0h,0eah	;[spr:2a][flipx:3e]
+	BYTE 0feh,0dch,0e0h,0e0h,0c0h,0e0h,060h,070h	;[spr:2b][flipx:3f]
+
+;[$2c|$2e]
+;[$2d|$2f]
+;[02,0e]......x.....xxx.
+;[06,1e].....xx....xxxx.
+;[0f,be]....xxxxx.xxxxx.
+;[0f,f0]....xxxxxxxx....
+;[1c,60]...xxx...xx.....
+;[1e,40]...xxxx..x......
+;[3f,c0]..xxxxxxxx......
+;[3f,d0]..xxxxxxxx.x....
+;[1f,f6]...xxxxxxxxx.xx.
+;[0f,fe]....xxxxxxxxxxx.
+;[7f,e4].xxxxxxxxxx..x..
+;[6f,c0].xx.xxxxxx......
+;[0f,80]....xxxxx.......
+;[1f,c0]...xxxxxxx......
+;[30,c0]..xx....xx......
+;[38,e0]..xxx...xxx.....
+	BYTE 002h,006h,00fh,00fh,01ch,01eh,03fh,03fh	;[spr:2c][flipx:40]
+	BYTE 01fh,00fh,07fh,06fh,00fh,01fh,030h,038h	;[spr:2d][flipx:41]
+	BYTE 00eh,01eh,0beh,0f0h,060h,040h,0c0h,0d0h	;[spr:2e][flipx:42]
+	BYTE 0f6h,0feh,0e4h,0c0h,080h,0c0h,0c0h,0e0h	;[spr:2f][flipx:43]
+
+;balloon
+;[$30|$32]
+;[$31|$32]
+;[0f,c0]....xxxxxx......
+;[3f,f0]..xxxxxxxxxx....
+;[7f,f8].xxxxxxxxxxxx...
+;[ff,fc]xxxxxxxxxxxxxx..
+;[ff,fc]xxxxxxxxxxxxxx..
+;[ff,fc]xxxxxxxxxxxxxx..
+;[ff,fc]xxxxxxxxxxxxxx..
+;[ff,fc]xxxxxxxxxxxxxx..
+;[7f,f8].xxxxxxxxxxxx...
+;[7f,f8].xxxxxxxxxxxx...
+;[7f,f8].xxxxxxxxxxxx...
+;[3f,f0]..xxxxxxxxxx....
+;[1f,e0]...xxxxxxxx.....
+;[0f,c0]....xxxxxx......
+;[07,80].....xxxx.......
+;[03,00]......xx........
+	BYTE 00fh,03fh,07fh,0ffh,0ffh,0ffh,0ffh,0ffh	;[spr:30][flipx:44]
+	BYTE 07fh,07fh,07fh,03fh,01fh,00fh,007h,003h	;[spr:31][flipx:45]
+	BYTE 0c0h,0f0h,0f8h,0fch,0fch,0fch,0fch,0fch	;[spr:32][flipx:46]
+	BYTE 0f8h,0f8h,0f8h,0f0h,0e0h,0c0h,080h,000h	;[spr:33][flipx:47]
+
+;balloon plop
+;[$34|$36]
+;[$35|$37]
+;[00,00]................
+;[03,00]......xx........
+;[03,00]......xx........
+;[33,30]..xx..xx..xx....
+;[33,30]..xx..xx..xx....
+;[0c,c0]....xx..xx......
+;[0c,c0]....xx..xx......
+;[f0,3c]xxxx......xxxx..
+;[f0,3c]xxxx......xxxx..
+;[0c,c0]....xx..xx......
+;[0c,c0]....xx..xx......
+;[33,30]..xx..xx..xx....
+;[33,30]..xx..xx..xx....
+;[03,00]......xx........
+;[03,00]......xx........
+;[00,00]................
+	BYTE 000h,003h,003h,033h,033h,00ch,00ch,0f0h	;[spr:34][flipx:48]
+	BYTE 0f0h,00ch,00ch,033h,033h,003h,003h,000h	;[spr:35][flipx:49]
+	BYTE 000h,000h,000h,030h,030h,0c0h,0c0h,03ch	;[spr:36][flipx:4a]
+	BYTE 03ch,0c0h,0c0h,030h,030h,000h,000h,000h	;[spr:37][flipx:4b]
+
+;arrow
+;[$38|$3a]
+;[$39|$3b]
+;[00,00]................
+;[07,00].....xxx........
+;[fe,00]xxxxxxx.........
+;[07,00].....xxx........
+;[00,00]................
+;[00,00]................
+;[00,00]................
+;[00,00]................
+;[00,00]................
+;[00,00]................
+;[00,00]................
+;[00,00]................
+;[00,00]................
+;[00,00]................
+;[00,00]................
+;[00,00]................
+	BYTE 000h,007h,0feh,007h,000h,000h,000h,000h	;[spr:38][flipx:4c]
+	;  implied to be   [00 00 00 00 00 00 00 00]	;[spr:39][flipx:4d]
+	;  implied to be   [00 00 00 00 00 00 00 00]	;[spr:3a][flipx:4e]
+	;  implied to be   [00 00 00 00 00 00 00 00]	;[spr:3b][flipx:4f]
+;----
+;[$b0|$b5]              [$ba|$bf]              [$c4|$c9]              [$ce|$d3]              [$d8|$dd]
+;[$b1|$b6]              [$bb|$c0]              [$c5|$ca]              [$cf|$d4]              [$d9|$de]
+;[$b2|$b7]              [$bc|$c1]              [$c6|$cb]              [$d0|$d5]              [$da|$df]
+;[$b3|$b8]              [$bd|$c2]              [$c7|$cc]              [$d1|$d6]              [$db|$e0]
+;[$b4|$b9]              [$be|$c3]              [$c8|$cd]              [$d2|$d7]              [$dc|$e1]
+;[01,00].......x........[01,00].......x........[01,00].......x........[01,00].......x........[01,00].......x........
+;[01,00].......x........[01,00].......x........[01,00].......x........[01,00].......x........[01,00].......x........
+;[01,00].......x........[01,00].......x........[01,00].......x........[01,00].......x........[01,00].......x........
+;[01,00].......x........[01,00].......x........[01,00].......x........[01,00].......x........[01,00].......x........
+;[01,00].......x........[01,00].......x........[01,00].......x........[01,00].......x........[01,00].......x........
+;[01,00].......x........[01,00].......x........[01,00].......x........[01,00].......x........[01,c0].......xxx......
+;[01,00].......x........[01,00].......x........[01,00].......x........[01,c0].......xxx......[06,b0].....xx.x.xx....
+;[01,00].......x........[01,00].......x........[01,c0].......xxx......[06,b0].....xx.x.xx....[0c,98]....xx..x..xx...
+;[01,00].......x........[01,c0].......xxx......[06,b0].....xx.x.xx....[0c,98]....xx..x..xx...[19,cc]...xx..xxx..xx..
+;[01,c0].......xxx......[06,b0].....xx.x.xx....[0c,98]....xx..x..xx...[19,cc]...xx..xxx..xx..[39,ce]..xxx..xxx..xxx.
+;[06,b0].....xx.x.xx....[0c,98]....xx..x..xx...[19,cc]...xx..xxx..xx..[39,ce]..xxx..xxx..xxx.[73,e7].xxx..xxxxx..xxx
+;[0c,98]....xx..x..xx...[19,cc]...xx..xxx..xx..[39,ce]..xxx..xxx..xxx.[73,e7].xxx..xxxxx..xxx[73,e7].xxx..xxxxx..xxx
+;[19,cc]...xx..xxx..xx..[39,ce]..xxx..xxx..xxx.[73,e7].xxx..xxxxx..xxx[73,e7].xxx..xxxxx..xxx[00,f6]........xxxx.xx.
+;[39,ce]..xxx..xxx..xxx.[73,e7].xxx..xxxxx..xxx[73,e7].xxx..xxxxx..xxx[00,f6]........xxxx.xx.[03,fa]......xxxxxxx.x.
+;[73,e7].xxx..xxxxx..xxx[73,e7].xxx..xxxxx..xxx[00,f6]........xxxx.xx.[03,fa]......xxxxxxx.x.[02,7c]......x..xxxxx..
+;[73,e7].xxx..xxxxx..xxx[00,f6]........xxxx.xx.[03,fa]......xxxxxxx.x.[02,7c]......x..xxxxx..[06,7c].....xx..xxxxx..
+;[00,f6]........xxxx.xx.[03,fa]......xxxxxxx.x.[02,7c]......x..xxxxx..[06,7c].....xx..xxxxx..[0f,ce]....xxxxxx..xxx.
+;[03,fa]......xxxxxxx.x.[02,7c]......x..xxxxx..[06,7c].....xx..xxxxx..[0f,ce]....xxxxxx..xxx.[0f,be]....xxxxx.xxxxx.
+;[02,7c]......x..xxxxx..[06,7c].....xx..xxxxx..[0f,ce]....xxxxxx..xxx.[0f,be]....xxxxx.xxxxx.[0f,7e]....xxxx.xxxxxx.
+;[06,7c].....xx..xxxxx..[0f,ce]....xxxxxx..xxx.[0f,be]....xxxxx.xxxxx.[0f,7e]....xxxx.xxxxxx.[07,be].....xxxx.xxxxx.
+;[0f,ce]....xxxxxx..xxx.[0f,be]....xxxxx.xxxxx.[0f,7e]....xxxx.xxxxxx.[07,be].....xxxx.xxxxx.[03,fe]......xxxxxxxxx.
+;[0f,be]....xxxxx.xxxxx.[0f,7e]....xxxx.xxxxxx.[07,be].....xxxx.xxxxx.[03,fe]......xxxxxxxxx.[19,fc]...xx..xxxxxxx..
+;[0f,7e]....xxxx.xxxxxx.[07,be].....xxxx.xxxxx.[03,fe]......xxxxxxxxx.[19,fc]...xx..xxxxxxx..[30,a8]..xx....x.x.x...
+;[07,be].....xxxx.xxxxx.[03,fe]......xxxxxxxxx.[19,fc]...xx..xxxxxxx..[30,a8]..xx....x.x.x...[67,03].xx..xxx......xx
+;[03,fe]......xxxxxxxxx.[19,fc]...xx..xxxxxxx..[30,a8]..xx....x.x.x...[67,03].xx..xxx......xx[ff,fe]xxxxxxxxxxxxxxx.
+;[19,fc]...xx..xxxxxxx..[30,a8]..xx....x.x.x...[67,03].xx..xxx......xx[ff,fe]xxxxxxxxxxxxxxx.[67,fc].xx..xxxxxxxxx..
+;[30,a8]..xx....x.x.x...[67,03].xx..xxx......xx[ff,fe]xxxxxxxxxxxxxxx.[67,fc].xx..xxxxxxxxx..[33,fc]..xx..xxxxxxxx..
+;[67,03].xx..xxx......xx[ff,fe]xxxxxxxxxxxxxxx.[67,fc].xx..xxxxxxxxx..[33,fc]..xx..xxxxxxxx..[19,f8]...xx..xxxxxx...
+;[ff,fe]xxxxxxxxxxxxxxx.[67,fc].xx..xxxxxxxxx..[33,fc]..xx..xxxxxxxx..[19,f8]...xx..xxxxxx...[73,e7].xxx..xxxxx..xxx
+;[67,fc].xx..xxxxxxxxx..[33,fc]..xx..xxxxxxxx..[19,f8]...xx..xxxxxx...[73,e7].xxx..xxxxx..xxx[73,e7].xxx..xxxxx..xxx
+;[33,fc]..xx..xxxxxxxx..[19,f8]...xx..xxxxxx...[73,e7].xxx..xxxxx..xxx[73,e7].xxx..xxxxx..xxx[39,ce]..xxx..xxx..xxx.
+;[19,f8]...xx..xxxxxx...[73,e7].xxx..xxxxx..xxx[73,e7].xxx..xxxxx..xxx[39,ce]..xxx..xxx..xxx.[19,cc]...xx..xxx..xx..
+;[73,e7].xxx..xxxxx..xxx[73,e7].xxx..xxxxx..xxx[39,ce]..xxx..xxx..xxx.[19,cc]...xx..xxx..xx..[0c,98]....xx..x..xx...
+;[73,e7].xxx..xxxxx..xxx[39,ce]..xxx..xxx..xxx.[19,cc]...xx..xxx..xx..[0c,98]....xx..x..xx...[06,b0].....xx.x.xx....
+;[39,ce]..xxx..xxx..xxx.[19,cc]...xx..xxx..xx..[0c,98]....xx..x..xx...[06,b0].....xx.x.xx....[01,c0].......xxx......
+;[19,cc]...xx..xxx..xx..[0c,98]....xx..x..xx...[06,b0].....xx.x.xx....[01,c0].......xxx......[00,00]................
+;[0c,98]....xx..x..xx...[06,b0].....xx.x.xx....[01,c0].......xxx......[00,00]................[00,00]................
+;[06,b0].....xx.x.xx....[01,c0].......xxx......[00,00]................[00,00]................[00,00]................
+;[01,c0].......xxx......[00,00]................[00,00]................[00,00]................[00,00]................
+;[00,00]................[00,00]................[00,00]................[00,00]................[00,00]................
+C_9A62	BYTE 001h,001h,001h,001h,001h,001h,001h,001h	;[$b0][$ba][$c4][$ce][$d8]
+	BYTE 001h,001h,006h,00ch,019h,039h,073h,073h	;[$b1][$bb][$c5][$cf][$d9]
+	BYTE 000h,003h,002h,006h,00fh,00fh,00fh,007h	;[$b2][$bc][$c6][$d0][$da]
+	BYTE 003h,019h,030h,067h,0ffh,067h,033h,019h	;[$b3][$bd][$c7][$d1][$db]
+	BYTE 073h,073h,039h,019h,00ch,006h,001h,000h	;[$b4][$be][$c8][$d2][$dc]
+	BYTE 000h,000h,000h,000h,000h,000h,000h,000h
+C_9A92	BYTE 000h,000h,000h,000h,000h,000h,000h,000h	;[$b5][$bf][$c9][$d3][$dd]
+	BYTE 000h,0c0h,0b0h,098h,0cch,0ceh,0e7h,0e7h	;[$b6][$c0][$ca][$d4][$de]
+	BYTE 0f6h,0fah,07ch,07ch,0ceh,0beh,07eh,0beh	;[$b7][$c1][$cb][$d5][$df]
+	BYTE 0feh,0fch,0a8h,003h,0feh,0fch,0fch,0f8h	;[$b8][$c2][$cc][$d6][$e0]
+	BYTE 0e7h,0e7h,0ceh,0cch,098h,0b0h,0c0h,000h	;[$b9][$c3][$cd][$d7][$e1]
+	BYTE 000h,000h,000h,000h,000h,000h,000h,000h
+;---- color related
+C_9AC2	BYTE 0f8h,0f8h,0f8h,0f8h,0f8h,0f8h,0f8h,0f8h
+C_9ACA	BYTE 06ah,06ah,06ah,06ah,06ah,06ah,06ah,06ah
+C_9AD2	BYTE 0a0h,0a0h,0a0h,0a0h,0a0h,0a0h,0a0h,0a0h
+	BYTE 033h,033h,033h,033h,033h,033h,033h,033h
+C_9AE2	BYTE 030h,030h,030h,030h,030h,030h,030h,030h
+	BYTE 0c6h,0c6h,0c6h,0c6h,0c6h,0c6h,0c6h,0c6h
+;(mama-pig colors)
+C_9AF2	BYTE 0f0h,0f0h,0f0h,0f0h,0f0h,0f0h,0f0h,0f0h
+	BYTE 0f0h,0f0h,060h,060h,060h,060h,060h,060h
+	BYTE 0f0h,0f0h,0f0h,0f0h,0f0h,0f0h,0f0h,0f0h
+	BYTE 0f0h,0f0h,020h,020h,0aah,020h,020h,020h
+	BYTE 060h,060h,060h,060h,060h,060h,0f0h,0f0h
+	BYTE 000h,000h,000h,000h,000h,000h,000h,000h
+C_9B22	BYTE 0f0h,0f0h,0f0h,0f0h,0f0h,0f0h,0f0h,0f0h
+	BYTE 0f0h,0f0h,060h,060h,060h,060h,060h,060h
+	BYTE 0f6h,0f6h,0f6h,0f6h,0f6h,0f6h,0f6h,0f6h
+	BYTE 0f6h,0f6h,0f6h,02ah,060h,020h,020h,020h
+	BYTE 060h,060h,060h,060h,060h,060h,0f0h,0f0h
+	BYTE 000h,000h,000h,000h,000h,000h,000h,000h
+;()
+C_9B52	BYTE 0f0h,0f0h,0f0h,0f0h,0f0h,0f0h,0f0h,0f0h
+	BYTE 0a0h,0a0h,0f0h,0f0h,0f0h,0f0h,0f0h,0f0h
+	BYTE 0f0h,0f0h,0f0h,0f3h,030h,030h,0f0h,0f0h
+	BYTE 0f0h,0f0h,0f0h,0f3h,030h,030h,0f0h,0f0h
+C_9B72	BYTE 0f0h,0f0h,0f0h,0f0h,0f0h,0f0h,0f0h,0f0h
+C_9B7A	BYTE 060h,060h,060h,060h,060h,060h,060h,060h
+C_9B82	BYTE 066h,066h,066h,066h,066h,066h,066h,066h
+C_9B8A	BYTE 06ah,06ah,06ah,06ah,061h,061h,061h,061h
+C_9B92	BYTE 03ch,03ch,03ch,03ch,03ch,03ch,03ch,03ch
+;----
+C_9B9A	BYTE 00h,00h	;blank space
+C_9B9C	BYTE 87h,88h	;ladder[left|right]
+__9B9E	BYTE 77h,81h
+C_9BA0	BYTE 86h,00h
+
+C_9BA2	BYTE 0b0h,0b1h,0b2h,0b3h,0b4h,0b5h,0b6h,0b7h,0b8h,0b9h	;mama-pig patterns #1
+C_9BAC	BYTE 0bah,0bbh,0bch,0bdh,0beh,0bfh,0c0h,0c1h,0c2h,0c3h	;mama-pig patterns #2
+C_9BB6	BYTE 0c4h,0c5h,0c6h,0c7h,0c8h,0c9h,0cah,0cbh,0cch,0cdh	;mama-pig patterns #3
+C_9BC0	BYTE 0ceh,0cfh,0d0h,0d1h,0d2h,0d3h,0d4h,0d5h,0d6h,0d7h	;mama-pig patterns #4
+C_9BCA	BYTE 0d8h,0d9h,0dah,0dbh,0dch,0ddh,0deh,0dfh,0e0h,0e1h	;mama-pig patterns #5
+
+C_9BD4	BYTE 07fh,080h	;tree design
+;----
+C_9BD6	BYTE 00h,87h,88h,00h,85h,8eh	;ladder wolf #1
+C_9BDC	BYTE 00h,8fh,91h,00h,90h,92h	;ladder wolf #2
+C_9BE2	BYTE 00h,93h,95h,00h,94h,96h	;ladder wolf #3
+C_9BE8	BYTE 97h,99h,88h,98h,9ah,88h	;ladder wolf #4
+;----
+C_9BEE	BYTE 33h,23h,2fh,32h,25h,11h	;'SCORE1'
+C_9BF4	BYTE 33h,23h,2fh,32h,25h,12h	;'SCORE2'
+C_9BFA	BYTE 28h,29h,0dh,33h,23h,2fh,32h,25h	;'HI-SCORE'
+C_9C02	BYTE 30h,00	;'P'
+C_9C04	BYTE 11h,00	;'1'
+C_9C06	BYTE 12h,00	;'2'
+C_9C08	BYTE 27h,21h,2dh,25h,0dh,2fh,36h,25h,32h	;'GAME OVER'
+__9C11	BYTE 0	;padding
+C_9C12	BYTE 32h,34h,0dh,2bh,25h,39h,00h,00h	;'RT-KEY  '
+C_9C1A	BYTE 0dh,32h,25h,39h,21h,2ch,30h,00h	;'-REYALP '
+;----
+C_9C22	BYTE 7eh,00	;life
+;----
+C_9C24	BYTE 09bh,09dh,09ch,09eh	;pushing wolf #1
+C_9C28	BYTE 09fh,0a2h,0a1h,0a3h	;pushing wolf #2
+C_9C2C	BYTE 0a0h,0a2h,0a1h,0a3h	;pushing wolf #3
+
+;boulder
+C_9C30	BYTE 0a4h,0a6h,0a5h,0a7h
+	BYTE 0a8h,0aah,0a9h,0abh
+;---- offsets for ladders
+C_9C38	BYTE 0fch,020h,060h,020h,060h,020h,060h,020h	;left
+C_9C40	BYTE 0fdh,020h,060h,020h,060h,020h,060h,020h	;right
+X_9C48
+;---- offsets for apples?
+C_9C48	WORD 086h
+	WORD 08ah
+	WORD 090h
+	WORD 095h
+	WORD 0a2h
+	WORD 0a3h
+	WORD 0a4h
+	WORD 0a5h
+	WORD 0a8h
+	WORD 0a9h
+	WORD 0afh
+	WORD 0b2h
+	WORD 0b3h
+	WORD 0b4h
+	WORD 0cbh
+	WORD 0ceh
+	WORD 0e3h
+	WORD 0e6h
+	WORD 0ech
+	WORD 0edh
+	WORD 102h
+	WORD 107h
+	WORD 108h
+C_9C76	WORD 121h
+;---- initial sprite table
+C_9C78	BYTE 0ffh,0ffh,000h,006h	;boulder[left]
+	BYTE 0ffh,0ffh,004h,006h	;boulder[right]
+	BYTE 0ffh,0ffh,038h,00ah	;arrow
+	BYTE 0ffh,0ffh,038h,00ah	;arrow
+	BYTE 0ffh,0ffh,008h,00ah	;ham
+	BYTE 0ffh,0ffh,00ch,00ah	;ball
+	BYTE 0ffh,0ffh,00ch,00ah	;ball
+	BYTE 0ffh,0ffh,0ffh,00ah	;?
+	BYTE 0ffh,0ffh,0ffh,00ah	;?
+	BYTE 0ffh,0ffh,0ffh,00ah	;?
+	BYTE 0ffh,0ffh,0ffh,00ah	;?
+	BYTE 0ffh,000h,030h,00dh	;balloon[color $d]
+	BYTE 0ffh,000h,030h,00eh	;balloon[color $e]
+	BYTE 0ffh,000h,030h,00dh	;balloon[color $d]
+	BYTE 0ffh,000h,030h,00eh	;balloon[color $e]
+;----
+;IF HACKED
+;C_9CB4	BYTE 21h,0Dh,21h,2Dh,21h,00h,00h,30h,0Dh,30h,32h,2Fh,00h,00h	;'A-AMA  P-PRO  '
+;ELSE
+C_9CB4	BYTE 33h,2ch,0dh,21h,2dh,21h,00h,33h,32h,0dh,30h,32h,2fh,00h	;'SL-AMA SR-PRO '
+;ENDI
+;----
+C_9CC2	BYTE 001h,001h,01ah,021h	;'A'
+	BYTE 001h,001h,027h,089h
+	BYTE 001h,001h,001h,0f0h	;'0'
+	BYTE 001h,001h,001h,0f0h	;'0'
+	BYTE 001h,001h,001h,08ah
+	BYTE 001h,001h,018h,089h
+	BYTE 001h,001h,001h,0f0h	;'0'
+	BYTE 001h,001h,001h,081h
+	BYTE 001h,001h,001h,082h
+	BYTE 001h,001h,002h,089h
+	BYTE 001h,001h,003h,08ah
+	BYTE 001h,001h,017h,086h
+	BYTE 001h,001h,001h,085h
+	BYTE 001h,001h,001h,08bh
+	BYTE 001h,001h,001h,083h
+	BYTE 001h,001h,001h,084h
+	BYTE 016h,001h,001h,070h
+	BYTE 001h,001h,016h,071h
+	BYTE 001h,001h,004h,0b0h
+	BYTE 002h,020h,003h,076h
+	BYTE 013h,020h,001h,076h
+	BYTE 013h,020h,001h,076h
+	BYTE 015h,001h,001h,070h
+	BYTE 001h,001h,015h,071h
+	BYTE 00ah,001h,00bh,070h
+	BYTE 001h,001h,00ah,073h
+	BYTE 006h,001h,001h,070h
+	BYTE 001h,001h,006h,071h
+	BYTE 005h,080h,00bh,076h
+	BYTE 005h,080h,001h,076h
+	BYTE 005h,001h,003h,070h
+	BYTE 001h,001h,005h,073h
+	BYTE 004h,001h,001h,070h
+	BYTE 001h,001h,005h,072h
+	BYTE 003h,001h,001h,070h
+	BYTE 001h,001h,003h,071h
+	BYTE 004h,001h,011h,070h
+	BYTE 001h,001h,004h,071h
+	BYTE 001h,001h,002h,072h
+	BYTE 002h,001h,001h,070h
+	BYTE 001h,001h,002h,071h
+	BYTE 004h,001h,017h,070h
+	BYTE 004h,080h,01ch,076h
+	BYTE 004h,080h,001h,076h
+	BYTE 003h,001h,003h,070h
+	BYTE 001h,001h,003h,071h
+	BYTE 00ch,020h,01dh,077h
+	BYTE 00ch,020h,001h,074h
+	BYTE 00ch,020h,001h,075h
+	BYTE 001h,001h,0a3h,000h
+	BYTE 001h,001h,0d4h,078h
+	BYTE 001h,001h,001h,079h
+	BYTE 001h,001h,001h,07ah
+	BYTE 001h,001h,001h,07bh
+	BYTE 001h,001h,001h,07ch
+	BYTE 001h,001h,001h,07dh
+	BYTE 020h,001h,002h,077h
+
+;IF HACKED
+;	;'1991'
+;	BYTE 001h,001h,019h,011h	;'1'
+;	BYTE 001h,001h,001h,019h	;'9'
+;	BYTE 001h,001h,001h,019h	;'9'
+;C_9DB2	BYTE 001h,001h,001h,011h	;'1'
+;ELSE
+	;'1982'
+	BYTE 001h,001h,019h,011h	;'1'
+	BYTE 001h,001h,001h,019h	;'9'
+	BYTE 001h,001h,001h,018h	;'8'
+C_9DB2	BYTE 001h,001h,001h,012h	;'2'
+;ENDI
+;---- color table
+C_9DB6	BYTE 8,4
+	WORD C_9AE2	;OFFSET C_9AE2
+	BYTE 8,0ah
+	WORD C_9ACA	;OFFSET C_9ACA
+	BYTE 8,1
+	WORD C_9B72	;OFFSET C_9B72
+	BYTE 8,1
+	WORD C_9B92	;OFFSET C_9B92
+	BYTE 8,1
+	WORD C_9B8A	;OFFSET C_9B8A
+	BYTE 20h,1
+	WORD C_9B52	;OFFSET C_9B52
+	BYTE 8,1fh
+	WORD C_9AD2	;OFFSET C_9AD2
+	BYTE 8,8
+C_9DD4	WORD C_9B7A	;OFFSET C_9B7A
+;----------------------------------------
+;melody data[howling]?
+C_9DD6
+	BYTE 3,0cah,00bh,0dch,05h
+	BYTE 3,0c0h,00bh,0d8h,03h
+	BYTE 3,0c3h,00ah,0d6h,03h
+	BYTE 3,0c3h,009h,0d4h,03h
+	BYTE 2,0c8h,007h,02h
+	BYTE 2,0c7h,008h,15h
+	BYTE 2,0cbh,008h,03h
+	BYTE 2,0c9h,008h,16h
+	BYTE 2,0cah,008h,16h
+	BYTE 2,0cch,008h,16h
+	BYTE 2,0cdh,008h,16h
+	BYTE 2,0c0h,009h,16h
+	BYTE 2,0c1h,009h,16h
+	BYTE 3,0c2h,009h,0d6h,02h
+	BYTE 3,0c5h,009h,0d8h,02h
+	BYTE 3,0c7h,009h,0dah,02h
+	BYTE 3,0c9h,009h,0dch,02h
+	BYTE 3,0cbh,009h,0deh,02h
+	BYTE 4,0dfh,0bfh,0dfh,0ffh,00h
+__9E2D	BYTE 0	;padding?
+__9E2E	BYTE 008h,098h
+	BYTE 008h,068h
+	BYTE 008h,088h
+	BYTE 008h,058h
+C_9E36	BYTE 008h,0a0h
+	BYTE 008h,080h
+	BYTE 008h,060h
+	BYTE 008h,040h
+	BYTE 008h,050h
+	BYTE 008h,0a0h
+	BYTE 008h,070h
+	BYTE 008h,080h
+	BYTE 004h,070h
+	BYTE 004h,070h
+	BYTE 004h,060h
+	BYTE 004h,060h
+	BYTE 008h,030h
+	BYTE 008h,0a0h
+	BYTE 008h,040h
+	BYTE 008h,090h
+;---- extra life score
+C_9E56	BYTE 03h	; 30,000
+	BYTE 10h	;100,000
+	BYTE 17h	;170,000
+	BYTE 24h	;240,000
+	BYTE 31h	;310,000
+	BYTE 38h	;380,000
+	BYTE 45h	;450,000
+	BYTE 52h	;520,000
+;----
+__9E5E	BYTE 0ffh
+__9E5F	BYTE 000h
+__9E60	BYTE 000h
+;----
+;melody data[intro]?
+C_9E61	BYTE 3,081h,000h,09fh,1eh
+	BYTE 3,08fh,008h,092h,1eh
+	BYTE 2,087h,009h,1eh
+	BYTE 3,08fh,008h,092h,1eh
+	BYTE 2,08ah,00ah,78h
+	BYTE 3,081h,000h,09fh,1eh
+	BYTE 3,08ah,00ah,092h,1eh
+	BYTE 2,087h,00bh,1eh
+	BYTE 3,08ah,00ah,092h,1eh
+	BYTE 2,086h,00dh,78h
+	BYTE 3,081h,000h,09fh,1eh
+	BYTE 3,08ah,00ah,092h,1eh
+	BYTE 2,08eh,00bh,1eh
+	BYTE 3,086h,00dh,092h,1eh
+	BYTE 2,08eh,00bh,78h
+	BYTE 3,081h,000h,09fh,1eh
+	BYTE 3,08fh,008h,092h,1eh
+	BYTE 2,08fh,007h,1eh
+	BYTE 3,08fh,008h,092h,1eh
+	BYTE 2,08ah,00ah,78h
+	BYTE 3,081h,000h,09fh,1eh
+	BYTE 3,08fh,008h,092h,1eh
+	BYTE 2,08fh,007h,1eh
+	BYTE 3,081h,007h,092h,1eh
+	BYTE 2,08bh,006h,3ch
+	BYTE 3,08fh,008h,092h,3ch
+	BYTE 2,08ah,00ah,3ch
+	BYTE 3,086h,00dh,092h,3ch
+	BYTE 2,08fh,007h,78h
+	BYTE 3,081h,000h,09fh,1eh
+	BYTE 3,08fh,007h,092h,1eh
+	BYTE 2,081h,007h,1eh
+	BYTE 3,08fh,007h,092h,1eh
+	BYTE 2,08fh,008h,3ch
+	BYTE 3,080h,00ah,092h,3ch
+	BYTE 2,08ah,00ah,3ch
+	BYTE 3,08eh,00bh,092h,3ch
+	BYTE 2,086h,00dh,78h
+	BYTE 0
+	WORD C_9E61
+;----
+;melody data[plop]?
+C_9F12	BYTE 3,0cfh,007h,0d0h,01h
+	BYTE 3,0c5h,007h,0d0h,01h
+	BYTE 3,0cbh,006h,0d1h,01h
+	BYTE 3,0c1h,006h,0d2h,02h
+	BYTE 3,0cbh,006h,0d2h,01h
+	BYTE 3,0c5h,007h,0d3h,01h
+	BYTE 3,0cfh,007h,0d3h,02h
+	BYTE 3,0c5h,007h,0d4h,01h
+	BYTE 3,0cbh,006h,0d5h,01h
+	BYTE 3,0c1h,006h,0d6h,02h
+	BYTE 3,0cbh,006h,0d6h,01h
+	BYTE 3,0c5h,007h,0d7h,01h
+	BYTE 3,0cfh,007h,0d8h,02h
+	BYTE 3,0c5h,007h,0d8h,01h
+	BYTE 3,0cbh,006h,0d9h,01h
+	BYTE 3,0c1h,006h,0d9h,01h
+	BYTE 4,09fh,0bfh,0dfh,0ffh,00h
+	BYTE 0
+;----
+;melody data[get_ready]?
+C_9F69	BYTE 3,081h,000h,092h,18h
+	BYTE 2,08fh,008h,18h
+	BYTE 2,081h,000h,18h
+	BYTE 2,086h,004h,18h
+	BYTE 2,081h,000h,18h
+	BYTE 2,08ah,005h,18h
+	BYTE 2,081h,000h,18h
+	BYTE 2,08bh,006h,18h
+	BYTE 2,08fh,008h,1ch
+	BYTE 2,087h,009h,1ch
+	BYTE 2,08fh,008h,1eh
+	BYTE 2,08fh,007h,1eh
+	BYTE 2,088h,007h,60h
+	BYTE 2,088h,007h,40h
+	BYTE 4,09fh,0bfh,0dfh,0ffh,00h
+;----------------------------------------
+;padding?
+__9FA8	BYTE 0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh
+	BYTE 0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh
+	BYTE 0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh
+	BYTE 0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh
+	BYTE 0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh
+	BYTE 0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0ffh
+;----------------------------------------
+	END
